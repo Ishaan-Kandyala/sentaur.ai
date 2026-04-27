@@ -1,20 +1,22 @@
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.providers.openai_provider import OpenAIProvider
-from backend.providers.groq_provider import GroqProvider
-from backend.providers.deepseek_provider import DeepSeekProvider
 from backend.providers.gemini_provider import GeminiProvider
+from backend.providers.deepseek_provider import DeepSeekProvider
+from backend.providers.groq_provider import GroqProvider
+from backend.providers.cerebras_provider import CerebrasProvider
+from backend.providers.together_provider import TogetherProvider
 from backend.providers.local_provider import LocalProvider
 
 
 class CentaurAI:
     def __init__(self):
         self.providers = [
-            OpenAIProvider(),
-            GroqProvider(),
-            DeepSeekProvider(),
             GeminiProvider(),
+            DeepSeekProvider(),
+            TogetherProvider(),
+            CerebrasProvider(),
+            GroqProvider(),
             LocalProvider()
         ]
 
@@ -23,7 +25,7 @@ class CentaurAI:
         self.system_prompt = {
             "role": "system",
             "content": (
-                "You are Sentaur AI — a calm, highly intelligent assistant. "
+                "You are Sentaur AI — a calm, highly intelligent assistant with deep expertise in cybersecurity. "
                 "You think step-by-step, explain your reasoning clearly, and avoid mistakes. "
                 "You never guess; you analyze. "
                 "You keep answers concise but insightful. "
