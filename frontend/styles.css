@@ -37,6 +37,22 @@ body.dark {
     margin-bottom: 15px;
 }
 
+.convo-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 4px;
+    font-size: 13px;
+}
+.convo-item:hover { background: rgba(255,255,255,0.1); }
+.convo-item.active { background: rgba(255,255,255,0.2); font-weight: bold; }
+.convo-item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.del-btn { background: none; border: none; cursor: pointer; opacity: 0.4; font-size: 11px; padding: 0 4px; }
+.del-btn:hover { opacity: 1; }
+
 .history-item {
     padding: 10px;
     margin-bottom: 8px;

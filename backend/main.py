@@ -1,39 +1,27 @@
-SYSTEM_PROMPT = """
-You are Sentaur AI — a calm, highly intelligent assistant.
-You think step-by-step, explain your reasoning clearly, and avoid mistakes.
-You never guess; you analyze.
-You keep answers concise but insightful.
-You maintain context from the conversation.
-"""
-
 from dotenv import load_dotenv
 load_dotenv()
 import os
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
+from pydantic import BaseModel
+from typing import Optional
 
 from .database import Base, engine, get_db, SessionLocal
 from .auth import router as auth_router, get_current_user
 from .ai import chat_with_centaur
 from .tools import get_due_reminders, mark_reminder_sent, send_email
-from pydantic import BaseModel
+from .models import ConversationTurn, Conversation
 
-# Create DB tables
 Base.metadata.create_all(bind=engine)
 
-# FastAPI app
 app = FastAPI()
 
-# Session middleware (required for OAuth)
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("JWT_SECRET", "dev-secret"))
-
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,37 +30,79 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Auth routes
 app.include_router(auth_router)
 
-# Chat request/response models
 class ChatIn(BaseModel):
     message: str
+    conversation_id: Optional[int] = None
 
 class ChatOut(BaseModel):
     response: str
+    conversation_id: int
 
-# Chat endpoint
 @app.post("/chat", response_model=ChatOut)
 def chat(req: ChatIn, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    answer = chat_with_centaur(db, user, req.message)
-    return ChatOut(response=answer)
+    # Get or create conversation
+    if req.conversation_id:
+        convo = db.get(Conversation, req.conversation_id)
+        if not convo or convo.user_id != user.id:
+            convo = None
+    else:
+        convo = None
 
-# History endpoint
-from .models import ConversationTurn
+    if not convo:
+        convo = Conversation(user_id=user.id, title="New Chat")
+        db.add(convo)
+        db.commit()
+        db.refresh(convo)
 
-@app.get("/history")
-def get_history(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    turns = (
-        db.query(ConversationTurn)
-        .filter(ConversationTurn.user_id == user.id)
-        .order_by(ConversationTurn.created_at.asc())
-        .limit(50)
+    answer = chat_with_centaur(db, user, req.message, convo.id)
+
+    # Auto-title from first message
+    if convo.title == "New Chat":
+        convo.title = req.message[:40]
+        db.commit()
+
+    return ChatOut(response=answer, conversation_id=convo.id)
+
+@app.get("/conversations")
+def list_conversations(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    convos = (
+        db.query(Conversation)
+        .filter(Conversation.user_id == user.id)
+        .order_by(Conversation.created_at.desc())
         .all()
     )
-    return [{"role": "user", "content": t.user_message, "bot": t.bot_message} for t in turns]
+    return [{"id": c.id, "title": c.title, "created_at": c.created_at} for c in convos]
 
-# Reminder scheduler job
+@app.post("/conversations")
+def new_conversation(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    convo = Conversation(user_id=user.id, title="New Chat")
+    db.add(convo)
+    db.commit()
+    db.refresh(convo)
+    return {"id": convo.id, "title": convo.title}
+
+@app.delete("/conversations/{conversation_id}")
+def delete_conversation(conversation_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    convo = db.get(Conversation, conversation_id)
+    if convo and convo.user_id == user.id:
+        db.query(ConversationTurn).filter(ConversationTurn.conversation_id == conversation_id).delete()
+        db.delete(convo)
+        db.commit()
+    return {"ok": True}
+
+@app.get("/history/{conversation_id}")
+def get_history(conversation_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    turns = (
+        db.query(ConversationTurn)
+        .filter(ConversationTurn.conversation_id == conversation_id)
+        .order_by(ConversationTurn.created_at.asc())
+        .limit(100)
+        .all()
+    )
+    return [{"content": t.user_message, "bot": t.bot_message} for t in turns]
+
 def reminder_job():
     db = SessionLocal()
     try:
@@ -80,19 +110,13 @@ def reminder_job():
         due = get_due_reminders(db, now)
         for r in due:
             if r.user and r.user.email:
-                send_email(
-                    to_email=r.user.email,
-                    subject="Sentaur reminder",
-                    body=r.text,
-                )
+                send_email(to_email=r.user.email, subject="Sentaur reminder", body=r.text)
             mark_reminder_sent(db, r)
     finally:
         db.close()
 
-# Start scheduler
 scheduler = BackgroundScheduler()
 scheduler.add_job(reminder_job, "interval", minutes=1)
 scheduler.start()
 
-# Serve frontend static files
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

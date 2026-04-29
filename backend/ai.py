@@ -74,15 +74,9 @@ Today's date and time: {datetime}
 """
 
 # Build conversation history
-def build_history(db: Session, user: User, limit: int = 40):
-    turns = (
-        db.query(ConversationTurn)
-        .filter(ConversationTurn.user_id == user.id)
-        .order_by(ConversationTurn.created_at.desc())
-        .limit(limit)
-        .all()
-    )
-
+def build_history(db: Session, conversation_id: int = None, limit: int = 40):
+    query = db.query(ConversationTurn).filter(ConversationTurn.conversation_id == conversation_id)
+    turns = query.order_by(ConversationTurn.created_at.desc()).limit(limit).all()
     turns = list(reversed(turns))
 
     system_content = SYSTEM_PROMPT.format(
@@ -161,11 +155,10 @@ def maybe_handle_tools(db: Session, user: User, message: str) -> str | None:
 
 
 # Main AI brain
-def chat_with_centaur(db: Session, user: User, message: str) -> str:
-    messages = build_history(db, user)
+def chat_with_centaur(db: Session, user: User, message: str, conversation_id: int = None) -> str:
+    messages = build_history(db, conversation_id)
     messages.append({"role": "user", "content": message})
 
-    # Try tools first — inject result as context so AI responds naturally
     tool_answer = maybe_handle_tools(db, user, message)
     if tool_answer:
         messages.append({
@@ -182,9 +175,9 @@ def chat_with_centaur(db: Session, user: User, message: str) -> str:
     if not answer:
         answer = "All AI providers are currently unavailable. Please try again later."
 
-    # Save conversation turn
     turn = ConversationTurn(
         user_id=user.id,
+        conversation_id=conversation_id,
         user_message=message,
         bot_message=answer,
     )
