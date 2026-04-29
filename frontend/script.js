@@ -66,7 +66,7 @@ async function loadConversations() {
         const div = document.createElement("div");
         div.className = "convo-item" + (c.id === currentConversationId ? " active" : "");
         div.innerHTML = `<span onclick="loadConversation(${c.id})">${c.title}</span>
-                         <button class="del-btn" onclick="deleteConversation(${c.id})">✕</button>`;
+                         <button class="del-btn" onclick="event.stopPropagation(); deleteConversation(${c.id})">✕</button>`;
         list.appendChild(div);
     });
 }
