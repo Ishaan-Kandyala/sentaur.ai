@@ -125,10 +125,10 @@ def maybe_handle_tools(db: Session, user: User, message: str) -> str | None:
         return generate_daily_briefing(db, user)
 
     # REMINDERS
-    if "remind me" in lower:
+    if "remind me" in lower or "set a reminder" in lower or "set reminder" in lower:
         due = datetime.now(timezone.utc) + timedelta(hours=1)
         create_reminder(db, user, message, due)
-        return "Got it — I’ll remind you in about an hour."
+        return "Got it — I’ll remind you in about an hour via email."
 
     # EMAIL WEATHER
     if ("email" in lower or "send" in lower) and ("weather" in lower or "forecast" in lower or "temperature" in lower):
