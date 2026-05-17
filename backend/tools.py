@@ -1,12 +1,14 @@
 import os
-import smtplib
 import requests
 import feedparser
-from email.mime.text import MIMEText
+import resend
 from sqlalchemy.orm import Session
 from datetime import datetime
 
 from .models import Reminder, Todo, CalendarEvent
+
+resend.api_key = os.getenv("RESEND_API_KEY")
+FROM_EMAIL = os.getenv("RESEND_FROM", "Sentaur AI <onboarding@resend.dev>")
 
 # -----------------------------
 # WEATHER TOOL
@@ -33,22 +35,13 @@ def get_weather_summary():
 # EMAIL SENDING TOOL
 # -----------------------------
 def send_email(to_email: str, subject: str, body: str):
-    host = os.getenv("SMTP_HOST")
-    port = int(os.getenv("SMTP_PORT", 587))
-    user = os.getenv("SMTP_USER")
-    password = os.getenv("SMTP_PASS")
-    from_email = os.getenv("FROM_EMAIL", user)
-
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = from_email
-    msg["To"] = to_email
-
     try:
-        with smtplib.SMTP(host, port) as server:
-            server.starttls()
-            server.login(user, password)
-            server.sendmail(from_email, [to_email], msg.as_string())
+        resend.Emails.send({
+            "from": FROM_EMAIL,
+            "to": [to_email],
+            "subject": subject,
+            "text": body,
+        })
     except Exception as e:
         print("Email error:", e)
 

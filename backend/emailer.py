@@ -1,22 +1,16 @@
-import smtplib
 import os
-from email.mime.text import MIMEText
+import resend
 
-def send_email(to, subject, body):
-    host = os.getenv("SMTP_HOST", "smtp.office365.com")
-    port = int(os.getenv("SMTP_PORT", 587))
-    user = os.getenv("SMTP_USER")
-    password = os.getenv("SMTP_PASS")
+resend.api_key = os.getenv("RESEND_API_KEY")
+FROM_EMAIL = os.getenv("RESEND_FROM", "Sentaur AI <onboarding@resend.dev>")
 
-    msg = MIMEText(body)
-    msg["From"] = user
-    msg["To"] = to
-    msg["Subject"] = subject
-
+def send_email(to: str, subject: str, body: str):
     try:
-        with smtplib.SMTP(host, port) as server:
-            server.starttls()
-            server.login(user, password)
-            server.send_message(msg)
+        resend.Emails.send({
+            "from": FROM_EMAIL,
+            "to": [to],
+            "subject": subject,
+            "text": body,
+        })
     except Exception as e:
         print("Email error:", e)
