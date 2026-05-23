@@ -23,15 +23,15 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
 oauth = OAuth()
 
-MICROSOFT_CLIENT_ID = os.getenv("MICROSOFT_CLIENT_ID")
-MICROSOFT_CLIENT_SECRET = os.getenv("MICROSOFT_CLIENT_SECRET")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
-if MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET:
+if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
     oauth.register(
-        name="microsoft",
-        client_id=MICROSOFT_CLIENT_ID,
-        client_secret=MICROSOFT_CLIENT_SECRET,
-        server_metadata_url="https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration",
+        name="google",
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET,
+        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
         client_kwargs={"scope": "openid email profile"},
     )
 
@@ -102,16 +102,16 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_
         raise HTTPException(status_code=401, detail="User not found")
     return user
 
-@router.get("/microsoft")
-async def microsoft_login(request: Request):
-    if not MICROSOFT_CLIENT_ID:
-        raise HTTPException(status_code=400, detail="Microsoft OAuth not configured")
-    redirect_uri = str(request.url_for("microsoft_callback"))
-    return await oauth.microsoft.authorize_redirect(request, redirect_uri)
+@router.get("/google")
+async def google_login(request: Request):
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=400, detail="Google OAuth not configured")
+    redirect_uri = str(request.url_for("google_callback"))
+    return await oauth.google.authorize_redirect(request, redirect_uri)
 
-@router.get("/microsoft/callback", name="microsoft_callback")
-async def microsoft_callback(request: Request, db: Session = Depends(get_db)):
-    token = await oauth.microsoft.authorize_access_token(request)
+@router.get("/google/callback", name="google_callback")
+async def google_callback(request: Request, db: Session = Depends(get_db)):
+    token = await oauth.google.authorize_access_token(request)
     email = token["userinfo"]["email"]
     access_token = get_or_create_oauth_user(db, email)
     return RedirectResponse(url=f"/chat.html?token={access_token}")
