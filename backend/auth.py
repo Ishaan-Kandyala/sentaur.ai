@@ -49,6 +49,20 @@ if GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET:
         client_kwargs={"scope": "user:email"},
     )
 
+DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
+DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
+
+if DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET:
+    oauth.register(
+        name="discord",
+        client_id=DISCORD_CLIENT_ID,
+        client_secret=DISCORD_CLIENT_SECRET,
+        authorize_url="https://discord.com/oauth2/authorize",
+        access_token_url="https://discord.com/api/oauth2/token",
+        api_base_url="https://discord.com/api/",
+        client_kwargs={"scope": "identify email"},
+    )
+
 class SignupRequest(BaseModel):
     email: str
     password: str
@@ -145,6 +159,24 @@ async def github_callback(request: Request, db: Session = Depends(get_db)):
     email = next((e["email"] for e in emails if e["primary"] and e["verified"]), None)
     if not email:
         raise HTTPException(status_code=400, detail="No verified email from GitHub")
+    access_token = get_or_create_oauth_user(db, email)
+    return RedirectResponse(url=f"/chat.html?token={access_token}")
+
+@router.get("/discord")
+async def discord_login(request: Request):
+    if not DISCORD_CLIENT_ID:
+        raise HTTPException(status_code=400, detail="Discord OAuth not configured")
+    redirect_uri = str(request.url_for("discord_callback"))
+    return await oauth.discord.authorize_redirect(request, redirect_uri)
+
+@router.get("/discord/callback", name="discord_callback")
+async def discord_callback(request: Request, db: Session = Depends(get_db)):
+    token = await oauth.discord.authorize_access_token(request)
+    resp = await oauth.discord.get("users/@me", token=token)
+    user_data = resp.json()
+    email = user_data.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="No email from Discord")
     access_token = get_or_create_oauth_user(db, email)
     return RedirectResponse(url=f"/chat.html?token={access_token}")
 
