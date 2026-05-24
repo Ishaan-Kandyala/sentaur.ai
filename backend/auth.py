@@ -35,6 +35,20 @@ if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
         client_kwargs={"scope": "openid email profile"},
     )
 
+GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
+GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
+
+if GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET:
+    oauth.register(
+        name="github",
+        client_id=GITHUB_CLIENT_ID,
+        client_secret=GITHUB_CLIENT_SECRET,
+        authorize_url="https://github.com/login/oauth/authorize",
+        access_token_url="https://github.com/login/oauth/access_token",
+        api_base_url="https://api.github.com/",
+        client_kwargs={"scope": "user:email"},
+    )
+
 class SignupRequest(BaseModel):
     email: str
     password: str
@@ -113,6 +127,24 @@ async def google_login(request: Request):
 async def google_callback(request: Request, db: Session = Depends(get_db)):
     token = await oauth.google.authorize_access_token(request)
     email = token["userinfo"]["email"]
+    access_token = get_or_create_oauth_user(db, email)
+    return RedirectResponse(url=f"/chat.html?token={access_token}")
+
+@router.get("/github")
+async def github_login(request: Request):
+    if not GITHUB_CLIENT_ID:
+        raise HTTPException(status_code=400, detail="GitHub OAuth not configured")
+    redirect_uri = str(request.url_for("github_callback"))
+    return await oauth.github.authorize_redirect(request, redirect_uri)
+
+@router.get("/github/callback", name="github_callback")
+async def github_callback(request: Request, db: Session = Depends(get_db)):
+    token = await oauth.github.authorize_access_token(request)
+    resp = await oauth.github.get("user/emails", token=token)
+    emails = resp.json()
+    email = next((e["email"] for e in emails if e["primary"] and e["verified"]), None)
+    if not email:
+        raise HTTPException(status_code=400, detail="No verified email from GitHub")
     access_token = get_or_create_oauth_user(db, email)
     return RedirectResponse(url=f"/chat.html?token={access_token}")
 
