@@ -49,18 +49,18 @@ if GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET:
         client_kwargs={"scope": "user:email"},
     )
 
-DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
-DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
+LINKEDIN_CLIENT_ID = os.getenv("LINKEDIN_CLIENT_ID")
+LINKEDIN_CLIENT_SECRET = os.getenv("LINKEDIN_CLIENT_SECRET")
 
-if DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET:
+if LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET:
     oauth.register(
-        name="discord",
-        client_id=DISCORD_CLIENT_ID,
-        client_secret=DISCORD_CLIENT_SECRET,
-        authorize_url="https://discord.com/oauth2/authorize",
-        access_token_url="https://discord.com/api/oauth2/token",
-        api_base_url="https://discord.com/api/",
-        client_kwargs={"scope": "identify email"},
+        name="linkedin",
+        client_id=LINKEDIN_CLIENT_ID,
+        client_secret=LINKEDIN_CLIENT_SECRET,
+        authorize_url="https://www.linkedin.com/oauth/v2/authorization",
+        access_token_url="https://www.linkedin.com/oauth/v2/accessToken",
+        api_base_url="https://api.linkedin.com/v2/",
+        client_kwargs={"scope": "openid profile email"},
     )
 
 class SignupRequest(BaseModel):
@@ -162,21 +162,21 @@ async def github_callback(request: Request, db: Session = Depends(get_db)):
     access_token = get_or_create_oauth_user(db, email)
     return RedirectResponse(url=f"/chat.html?token={access_token}")
 
-@router.get("/discord")
-async def discord_login(request: Request):
-    if not DISCORD_CLIENT_ID:
-        raise HTTPException(status_code=400, detail="Discord OAuth not configured")
-    redirect_uri = str(request.url_for("discord_callback"))
-    return await oauth.discord.authorize_redirect(request, redirect_uri)
+@router.get("/linkedin")
+async def linkedin_login(request: Request):
+    if not LINKEDIN_CLIENT_ID:
+        raise HTTPException(status_code=400, detail="LinkedIn OAuth not configured")
+    redirect_uri = str(request.url_for("linkedin_callback"))
+    return await oauth.linkedin.authorize_redirect(request, redirect_uri)
 
-@router.get("/discord/callback", name="discord_callback")
-async def discord_callback(request: Request, db: Session = Depends(get_db)):
-    token = await oauth.discord.authorize_access_token(request)
-    resp = await oauth.discord.get("users/@me", token=token)
+@router.get("/linkedin/callback", name="linkedin_callback")
+async def linkedin_callback(request: Request, db: Session = Depends(get_db)):
+    token = await oauth.linkedin.authorize_access_token(request)
+    resp = await oauth.linkedin.get("userinfo", token=token)
     user_data = resp.json()
     email = user_data.get("email")
     if not email:
-        raise HTTPException(status_code=400, detail="No email from Discord")
+        raise HTTPException(status_code=400, detail="No email from LinkedIn")
     access_token = get_or_create_oauth_user(db, email)
     return RedirectResponse(url=f"/chat.html?token={access_token}")
 
