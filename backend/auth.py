@@ -49,18 +49,18 @@ if GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET:
         client_kwargs={"scope": "user:email"},
     )
 
-LINKEDIN_CLIENT_ID = os.getenv("LINKEDIN_CLIENT_ID")
-LINKEDIN_CLIENT_SECRET = os.getenv("LINKEDIN_CLIENT_SECRET")
+TWITTER_CLIENT_ID = os.getenv("TWITTER_CLIENT_ID")
+TWITTER_CLIENT_SECRET = os.getenv("TWITTER_CLIENT_SECRET")
 
-if LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET:
+if TWITTER_CLIENT_ID and TWITTER_CLIENT_SECRET:
     oauth.register(
-        name="linkedin",
-        client_id=LINKEDIN_CLIENT_ID,
-        client_secret=LINKEDIN_CLIENT_SECRET,
-        authorize_url="https://www.linkedin.com/oauth/v2/authorization",
-        access_token_url="https://www.linkedin.com/oauth/v2/accessToken",
-        api_base_url="https://api.linkedin.com/v2/",
-        client_kwargs={"scope": "openid profile email"},
+        name="twitter",
+        client_id=TWITTER_CLIENT_ID,
+        client_secret=TWITTER_CLIENT_SECRET,
+        authorize_url="https://twitter.com/i/oauth2/authorize",
+        access_token_url="https://api.twitter.com/2/oauth2/token",
+        api_base_url="https://api.twitter.com/2/",
+        client_kwargs={"scope": "tweet.read users.read", "code_challenge_method": "S256"},
     )
 
 class SignupRequest(BaseModel):
@@ -162,21 +162,20 @@ async def github_callback(request: Request, db: Session = Depends(get_db)):
     access_token = get_or_create_oauth_user(db, email)
     return RedirectResponse(url=f"/chat.html?token={access_token}")
 
-@router.get("/linkedin")
-async def linkedin_login(request: Request):
-    if not LINKEDIN_CLIENT_ID:
-        raise HTTPException(status_code=400, detail="LinkedIn OAuth not configured")
-    redirect_uri = str(request.url_for("linkedin_callback"))
-    return await oauth.linkedin.authorize_redirect(request, redirect_uri)
+@router.get("/twitter")
+async def twitter_login(request: Request):
+    if not TWITTER_CLIENT_ID:
+        raise HTTPException(status_code=400, detail="X OAuth not configured")
+    redirect_uri = str(request.url_for("twitter_callback"))
+    return await oauth.twitter.authorize_redirect(request, redirect_uri)
 
-@router.get("/linkedin/callback", name="linkedin_callback")
-async def linkedin_callback(request: Request, db: Session = Depends(get_db)):
-    token = await oauth.linkedin.authorize_access_token(request)
-    resp = await oauth.linkedin.get("userinfo", token=token)
+@router.get("/twitter/callback", name="twitter_callback")
+async def twitter_callback(request: Request, db: Session = Depends(get_db)):
+    token = await oauth.twitter.authorize_access_token(request)
+    resp = await oauth.twitter.get("users/me", token=token)
     user_data = resp.json()
-    email = user_data.get("email")
-    if not email:
-        raise HTTPException(status_code=400, detail="No email from LinkedIn")
+    username = user_data["data"]["username"]
+    email = f"{username}@x.oauth"
     access_token = get_or_create_oauth_user(db, email)
     return RedirectResponse(url=f"/chat.html?token={access_token}")
 
