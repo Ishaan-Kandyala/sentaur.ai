@@ -156,14 +156,26 @@ if (localStorage.getItem("darkMode") === "true") {
 
 function addMessage(sender, text) {
     const box = document.getElementById("chatbox");
-    const div = document.createElement("div");
-    div.className = "message " + sender;
+    const row = document.createElement("div");
+    row.className = "msg-row " + sender;
+
     if (sender === "bot") {
-        div.innerHTML = marked.parse(text);
+        const avatar = document.createElement("div");
+        avatar.className = "avatar bot-avatar";
+        avatar.textContent = "S";
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.innerHTML = marked.parse(text);
+        row.appendChild(avatar);
+        row.appendChild(bubble);
     } else {
-        div.innerText = text;
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = text;
+        row.appendChild(bubble);
     }
-    box.appendChild(div);
+
+    box.appendChild(row);
     box.scrollTop = box.scrollHeight;
 }
 
