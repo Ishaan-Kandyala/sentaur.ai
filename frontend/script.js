@@ -117,8 +117,7 @@ async function sendMessage() {
 
     addMessage("user", msg);
     msgInput.value = "";
-    msgInput.style.height = "auto";
-    document.getElementById("typing").style.display = "flex";
+    document.getElementById("typing").style.display = "block";
 
     const res = await fetch(API + "/chat", {
         method: "POST",
@@ -155,11 +154,6 @@ if (localStorage.getItem("darkMode") === "true") {
     document.body.classList.add("dark");
 }
 
-function autoResize(el) {
-    el.style.height = "auto";
-    el.style.height = Math.min(el.scrollHeight, 200) + "px";
-}
-
 function addMessage(sender, text) {
     const box = document.getElementById("chatbox");
     const row = document.createElement("div");
@@ -167,13 +161,13 @@ function addMessage(sender, text) {
 
     if (sender === "bot") {
         const avatar = document.createElement("div");
-        avatar.className = "bot-avatar";
+        avatar.className = "avatar bot-avatar";
         avatar.textContent = "S";
-        const content = document.createElement("div");
-        content.className = "bot-content";
-        content.innerHTML = marked.parse(text);
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.innerHTML = marked.parse(text);
         row.appendChild(avatar);
-        row.appendChild(content);
+        row.appendChild(bubble);
     } else {
         const bubble = document.createElement("div");
         bubble.className = "bubble";

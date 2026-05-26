@@ -1,30 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
     <title>Settings – Sentaur AI</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="auth-page">
+<body>
+
 <div class="container">
-    <div class="brand">
-        <div class="brand-logo">S</div>
-        <span class="brand-name">Sentaur AI</span>
-    </div>
-
     <h2>Settings</h2>
-    <p class="subtitle">Manage your preferences</p>
 
-    <label>Your city (for weather updates)</label>
-    <input id="cityInput" placeholder="e.g. New York">
-    <button onclick="updateCity()">Save Changes</button>
+    <label>Your City</label>
+    <input id="cityInput" placeholder="Enter your city">
 
-    <button onclick="logout()" style="background:transparent; color:#c0392b; border:1px solid #e8d5d3; box-shadow:none;">
-        Sign Out
-    </button>
+    <button onclick="updateCity()">Save</button>
 
-    <p><a href="chat.html">← Back to chat</a></p>
+    <button onclick="logout()" style="margin-top:20px; background:#d9534f;">Logout</button>
 </div>
+
 <script src="script.js"></script>
 </body>
 </html>
