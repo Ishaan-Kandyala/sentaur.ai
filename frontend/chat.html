@@ -12,7 +12,11 @@
 
     <!-- Sidebar -->
     <div class="sidebar">
-        <button onclick="newConversation()" style="width:100%;margin-bottom:10px;">+ New Chat</button>
+        <div class="sidebar-brand">
+            <div class="sidebar-logo">S</div>
+            <span class="sidebar-title">Sentaur AI</span>
+        </div>
+        <button class="new-chat-btn" onclick="newConversation()">＋ New Chat</button>
         <div id="history"></div>
     </div>
 
@@ -21,9 +25,9 @@
 
         <!-- Top Bar -->
         <div class="topbar">
-            <h2>Sentaur AI</h2>
+            <h2>Chat</h2>
             <div class="top-buttons">
-                <a href="settings.html">⚙️</a>
+                <a href="settings.html">Settings</a>
                 <button onclick="toggleDarkMode()">🌙</button>
                 <button onclick="logout()">Logout</button>
             </div>
@@ -33,7 +37,7 @@
         <div id="chatbox" class="chatbox"></div>
 
         <!-- Typing Indicator -->
-        <div id="typing" class="msg-row bot" style="display:none;">
+        <div id="typing" class="msg-row bot" style="display:none; padding: 0 32px 8px;">
             <div class="avatar bot-avatar">S</div>
             <div class="bubble typing-bubble">
                 <span class="dot"></span>
@@ -44,12 +48,12 @@
 
         <!-- Input Row -->
         <div class="input-row">
-            <input 
-                id="msg" 
-                placeholder="Type a message..." 
+            <input
+                id="msg"
+                placeholder="Ask Sentaur anything..."
                 onkeydown="if(event.key==='Enter') sendMessage()"
             >
-            <button onclick="sendMessage()">Send</button>
+            <button onclick="sendMessage()">Send →</button>
         </div>
 
     </div>
