@@ -67,6 +67,7 @@ body.dark {
     flex-direction: column;
     padding: 20px 24px 20px;
     min-width: 0;
+    overflow: hidden;
 }
 
 /* ── Top Bar ── */
@@ -89,6 +90,7 @@ body.dark {
 /* ── Chatbox ── */
 .chatbox {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding-right: 6px;
     display: flex;
