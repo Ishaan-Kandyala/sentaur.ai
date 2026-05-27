@@ -3,7 +3,6 @@ load_dotenv()
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
-
 from .models import ConversationTurn, User
 from .tools import (
     get_weather_summary,
@@ -23,17 +22,24 @@ from .providers.together_provider import TogetherProvider
 from .providers.deepseek_provider import DeepSeekProvider
 from .providers.local_provider import LocalProvider
 
-# Provider fallback chain — tries each in order until one succeeds
-PROVIDERS = [
-    GeminiProvider(),
-    DeepSeekProvider(),
-    TogetherProvider(),
-    CerebrasProvider(),
-    GroqProvider(),
-    LocalProvider(),
-]
+# Named instances (reused across requests)
+_gemini = GeminiProvider()
+_deepseek = DeepSeekProvider()
+_together = TogetherProvider()
+_cerebras = CerebrasProvider()
+_groq = GroqProvider()
+_local = LocalProvider()
 
-# System prompt
+PROVIDERS = [_gemini, _deepseek, _together, _cerebras, _groq, _local]
+
+PROVIDER_MAP = {
+    "gemini": _gemini,
+    "deepseek": _deepseek,
+    "together": _together,
+    "cerebras": _cerebras,
+    "groq": _groq,
+}
+
 SYSTEM_PROMPT = """
 You are Sentaur AI — an intelligent, friendly personal assistant with deep expertise in cybersecurity. 🤖
 
@@ -73,7 +79,7 @@ Guidelines:
 Today's date and time: {datetime}
 """
 
-# Build conversation history
+
 def build_history(db: Session, conversation_id: int = None, limit: int = 40):
     query = db.query(ConversationTurn).filter(ConversationTurn.conversation_id == conversation_id)
     turns = query.order_by(ConversationTurn.created_at.desc()).limit(limit).all()
@@ -91,19 +97,15 @@ def build_history(db: Session, conversation_id: int = None, limit: int = 40):
     return messages
 
 
-# Tool routing
 def maybe_handle_tools(db: Session, user: User, message: str) -> str | None:
     lower = message.lower()
 
-    # NEWS
     if "news" in lower or "headlines" in lower:
         return get_news_headlines()
 
-    # WEATHER
     if "weather" in lower or "temperature" in lower or "forecast" in lower:
         return get_weather_summary()
 
-    # TO‑DOS
     if "add a task" in lower or "add todo" in lower or "remember this task" in lower:
         add_todo(db, user, message)
         return "Task added."
@@ -111,7 +113,6 @@ def maybe_handle_tools(db: Session, user: User, message: str) -> str | None:
     if "list my tasks" in lower or "show my todos" in lower:
         return list_todos(db, user)
 
-    # CALENDAR EVENTS
     if "add event" in lower or "schedule" in lower:
         date = datetime.now(timezone.utc) + timedelta(days=1)
         add_calendar_event(db, user, message, date)
@@ -120,41 +121,78 @@ def maybe_handle_tools(db: Session, user: User, message: str) -> str | None:
     if "today's events" in lower or "today events" in lower:
         return get_todays_events(db, user)
 
-    # DAILY BRIEFING
     if "daily briefing" in lower or "morning summary" in lower:
         return generate_daily_briefing(db, user)
 
-    # REMINDERS
     if "remind me" in lower or "set a reminder" in lower or "set reminder" in lower:
         due = datetime.now(timezone.utc) + timedelta(hours=1)
         create_reminder(db, user, message, due)
-        return "Got it — I’ll remind you in about an hour via email."
+        return "Got it — I'll remind you in about an hour via email."
 
-    # EMAIL WEATHER
     if ("email" in lower or "send" in lower) and ("weather" in lower or "forecast" in lower or "temperature" in lower):
         weather = get_weather_summary()
         send_email(to_email=user.email, subject="Your Weather Update", body=weather)
-        return f"I’ve emailed you the weather update:\n\n{weather}"
+        return f"I've emailed you the weather update:\n\n{weather}"
 
-    # EMAIL NEWS
     if ("email" in lower or "send" in lower) and ("news" in lower or "headlines" in lower):
         news = get_news_headlines()
-        send_email(to_email=user.email, subject="Today’s News Headlines", body=news)
-        return f"I’ve emailed you the headlines:\n\n{news}"
+        send_email(to_email=user.email, subject="Today's News Headlines", body=news)
+        return f"I've emailed you the headlines:\n\n{news}"
 
-    # EMAIL
     if "email me" in lower or "send me" in lower:
-        send_email(
-            to_email=user.email,
-            subject="Message from Sentaur",
-            body=message,
-        )
-        return "I’ve emailed that to you."
+        send_email(to_email=user.email, subject="Message from Sentaur", body=message)
+        return "I've emailed that to you."
 
     return None
 
 
-# Main AI brain
+def get_providers(model_preference: str = None):
+    if model_preference and model_preference in PROVIDER_MAP:
+        preferred = PROVIDER_MAP[model_preference]
+        others = [p for p in PROVIDERS if p is not preferred]
+        return [preferred] + others
+    return PROVIDERS
+
+
+def quick_title(message: str) -> str:
+    try:
+        result = _groq.chat([
+            {"role": "system", "content": "Generate a 3-5 word title for a chat conversation that starts with the following message. Reply with ONLY the title, no quotes, no punctuation at the end."},
+            {"role": "user", "content": message[:300]},
+        ])
+        return (result or message)[:50].strip()
+    except Exception:
+        return message[:40]
+
+
+def iter_chat(messages, providers=None, image_data=None, image_mime=None):
+    """Yields raw text chunks from the first successful provider."""
+    if providers is None:
+        providers = PROVIDERS
+
+    for provider in providers:
+        got_chunk = False
+        try:
+            if hasattr(provider, "stream_chat"):
+                kwargs = {}
+                if image_data and isinstance(provider, GeminiProvider):
+                    kwargs = {"image_data": image_data, "image_mime": image_mime}
+                for chunk in provider.stream_chat(messages, **kwargs):
+                    if chunk:
+                        yield chunk
+                        got_chunk = True
+            else:
+                result = provider.chat(messages)
+                if result:
+                    yield result
+                    got_chunk = True
+        except Exception as e:
+            print(f"{type(provider).__name__} failed: {e}")
+
+        if got_chunk:
+            return
+
+
 def chat_with_centaur(db: Session, user: User, message: str, conversation_id: int = None) -> str:
     messages = build_history(db, conversation_id)
     messages.append({"role": "user", "content": message})
@@ -163,7 +201,7 @@ def chat_with_centaur(db: Session, user: User, message: str, conversation_id: in
     if tool_answer:
         messages.append({
             "role": "system",
-            "content": f"Tool result for the user's request:\n{tool_answer}\n\nPresent this to the user naturally and conversationally."
+            "content": f"Tool result for the user's request:\n{tool_answer}\n\nPresent this to the user naturally and conversationally.",
         })
 
     answer = None

@@ -2,16 +2,19 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sentaur AI – Chat</title>
     <link rel="stylesheet" href="styles.css">
     <script src="marked.min.js"></script>
 </head>
 <body>
 
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
 <div class="layout">
 
     <!-- Sidebar -->
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
         <button onclick="newConversation()" style="width:100%;margin-bottom:10px;">+ New Chat</button>
         <div id="history"></div>
     </div>
@@ -21,16 +24,38 @@
 
         <!-- Top Bar -->
         <div class="topbar">
-            <h2>Sentaur AI</h2>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <button class="hamburger" onclick="toggleSidebar()">☰</button>
+                <h2>Sentaur AI</h2>
+            </div>
             <div class="top-buttons">
+                <select class="model-select" id="modelSelect" onchange="saveModel(this.value)" title="AI Model">
+                    <option value="auto">Auto</option>
+                    <option value="gemini">Gemini 2.5</option>
+                    <option value="groq">Groq / Llama</option>
+                    <option value="cerebras">Cerebras</option>
+                    <option value="together">Together</option>
+                    <option value="deepseek">DeepSeek</option>
+                </select>
                 <a href="settings.html">⚙️</a>
                 <button onclick="toggleDarkMode()">🌙</button>
                 <button onclick="logout()">Logout</button>
             </div>
         </div>
 
-        <!-- Chatbox -->
-        <div id="chatbox" class="chatbox"></div>
+        <!-- Chatbox (welcome state lives inside) -->
+        <div id="chatbox" class="chatbox">
+            <div id="welcome" class="welcome-state">
+                <div class="welcome-logo">S</div>
+                <h3>How can I help you today?</h3>
+                <div class="welcome-suggestions">
+                    <button onclick="fillPrompt('What cybersecurity topics should I learn first?')">🔐 Cybersecurity learning path</button>
+                    <button onclick="fillPrompt('Explain SQL injection and how to prevent it')">💉 SQL injection explained</button>
+                    <button onclick="fillPrompt('What are today\'s top news headlines?')">📰 Today\'s headlines</button>
+                    <button onclick="fillPrompt('What\'s the weather like today?')">🌤️ Check weather</button>
+                </div>
+            </div>
+        </div>
 
         <!-- Typing Indicator -->
         <div id="typing" class="msg-row bot" style="display:none;">
@@ -42,18 +67,18 @@
             </div>
         </div>
 
-        <!-- Input Row -->
-        <div class="input-row">
-            <input 
-                id="msg" 
-                placeholder="Type a message..." 
-                onkeydown="if(event.key==='Enter') sendMessage()"
-            >
-            <button onclick="sendMessage()">Send</button>
+        <!-- Input Area -->
+        <div class="input-area">
+            <div id="imgPreview" class="img-preview"></div>
+            <div class="input-row">
+                <button class="attach-btn" onclick="document.getElementById('imgInput').click()" title="Attach image">📎</button>
+                <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="handleImage(event)">
+                <textarea id="msg" rows="1" placeholder="Type a message… (Shift+Enter for new line)"></textarea>
+                <button onclick="sendMessage()">Send</button>
+            </div>
         </div>
 
     </div>
-
 </div>
 
 <script src="script.js"></script>
