@@ -29,31 +29,17 @@
                 <h2>Sentaur AI</h2>
             </div>
             <div class="top-buttons">
-                <select class="model-select" id="modelSelect" onchange="saveModel(this.value)" title="AI Model">
-                    <option value="auto">Auto</option>
-                    <option value="gemini">Gemini 2.5</option>
-                    <option value="groq">Groq / Llama</option>
-                    <option value="cerebras">Cerebras</option>
-                    <option value="together">Together</option>
-                    <option value="deepseek">DeepSeek</option>
-                </select>
                 <a href="settings.html">⚙️</a>
                 <button onclick="toggleDarkMode()">🌙</button>
                 <button onclick="logout()">Logout</button>
             </div>
         </div>
 
-        <!-- Chatbox (welcome state lives inside) -->
+        <!-- Chatbox -->
         <div id="chatbox" class="chatbox">
             <div id="welcome" class="welcome-state">
                 <div class="welcome-logo">S</div>
                 <h3>How can I help you today?</h3>
-                <div class="welcome-suggestions">
-                    <button onclick="fillPrompt('What cybersecurity topics should I learn first?')">🔐 Cybersecurity learning path</button>
-                    <button onclick="fillPrompt('Explain SQL injection and how to prevent it')">💉 SQL injection explained</button>
-                    <button onclick="fillPrompt('What are today\'s top news headlines?')">📰 Today\'s headlines</button>
-                    <button onclick="fillPrompt('What\'s the weather like today?')">🌤️ Check weather</button>
-                </div>
             </div>
         </div>
 
@@ -67,16 +53,87 @@
             </div>
         </div>
 
-        <!-- Input Area -->
-        <div class="input-area">
-            <div id="imgPreview" class="img-preview"></div>
-            <div class="input-row">
-                <button class="attach-btn" onclick="document.getElementById('imgInput').click()" title="Attach image">📎</button>
-                <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="handleImage(event)">
-                <textarea id="msg" rows="1" placeholder="Type a message… (Shift+Enter for new line)"></textarea>
-                <button onclick="sendMessage()">Send</button>
+        <!-- Copilot-style Input Section -->
+        <div class="copilot-input-section">
+
+            <!-- Suggestion Pills (hidden once chat starts) -->
+            <div id="suggestionPills" class="suggestion-pills">
+                <button class="suggestion-pill" onclick="fillPrompt('Explain SQL injection and show me a real example')">Explain SQL injection</button>
+                <button class="suggestion-pill" onclick="fillPrompt('Build a threat model for my web application')">Build a threat model</button>
+                <button class="suggestion-pill" onclick="fillPrompt('Teach me OSINT investigation techniques')">OSINT investigation</button>
+                <button class="suggestion-pill" onclick="fillPrompt('How do I detect and find XSS vulnerabilities?')">Find XSS vulnerabilities</button>
+                <button class="suggestion-pill" onclick="fillPrompt('Help me decode or crack this cipher')">Crack a cipher</button>
+                <button class="suggestion-pill" onclick="fillPrompt('Analyze this suspicious malware behavior')">Analyze malware</button>
+                <button class="suggestion-pill" onclick="fillPrompt('Help me solve a CTF challenge')">CTF challenge help</button>
+                <button class="suggestion-pill" onclick="fillPrompt('Explain a recent critical CVE and how to patch it')">Explain a CVE</button>
             </div>
-        </div>
+
+            <!-- The input box -->
+            <div class="copilot-input-box">
+                <div id="imgPreview" class="img-preview"></div>
+                <textarea id="msg" rows="1" placeholder="Message Sentaur AI"></textarea>
+                <div class="copilot-toolbar">
+                    <div class="copilot-toolbar-left">
+                        <button class="copilot-attach-btn" onclick="document.getElementById('imgInput').click()" title="Attach image">+</button>
+                        <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="handleImage(event)">
+                        <div class="model-selector-wrap">
+                            <button class="copilot-model-btn" id="modelBtn" onclick="toggleModelMenu()">
+                                <span id="modelBtnLabel">Auto</span>
+                                <span class="model-chevron">∨</span>
+                            </button>
+                            <div class="copilot-model-menu" id="modelMenu">
+                                <div class="model-option active" data-model="auto" data-label="Auto" onclick="selectModel(this)">
+                                    <div class="model-option-icon">✦</div>
+                                    <div class="model-option-text">
+                                        <strong>Auto</strong>
+                                        <small>Picks the best available model</small>
+                                    </div>
+                                </div>
+                                <div class="model-option" data-model="gemini" data-label="Gemini 2.5" onclick="selectModel(this)">
+                                    <div class="model-option-icon">◆</div>
+                                    <div class="model-option-text">
+                                        <strong>Gemini 2.5</strong>
+                                        <small>Google's multimodal model, supports images</small>
+                                    </div>
+                                </div>
+                                <div class="model-option" data-model="groq" data-label="Groq" onclick="selectModel(this)">
+                                    <div class="model-option-icon">⚡</div>
+                                    <div class="model-option-text">
+                                        <strong>Groq / Llama</strong>
+                                        <small>Ultra-fast Llama 3.3 70B</small>
+                                    </div>
+                                </div>
+                                <div class="model-option" data-model="cerebras" data-label="Cerebras" onclick="selectModel(this)">
+                                    <div class="model-option-icon">◉</div>
+                                    <div class="model-option-text">
+                                        <strong>Cerebras</strong>
+                                        <small>High-speed Llama inference</small>
+                                    </div>
+                                </div>
+                                <div class="model-option" data-model="together" data-label="Together" onclick="selectModel(this)">
+                                    <div class="model-option-icon">◎</div>
+                                    <div class="model-option-text">
+                                        <strong>Together / Llama 405B</strong>
+                                        <small>Most capable, complex tasks</small>
+                                    </div>
+                                </div>
+                                <div class="model-option" data-model="deepseek" data-label="DeepSeek" onclick="selectModel(this)">
+                                    <div class="model-option-icon">⬡</div>
+                                    <div class="model-option-text">
+                                        <strong>DeepSeek</strong>
+                                        <small>Strong reasoning model</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="copilot-toolbar-right">
+                        <button class="copilot-send-btn" onclick="sendMessage()">&#9658;</button>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- end copilot-input-section -->
 
     </div>
 </div>

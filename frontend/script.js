@@ -25,14 +25,45 @@ function toggleDarkMode() {
 }
 
 /* ── MODEL SELECTOR ── */
-function saveModel(val) {
-    localStorage.setItem("modelPreference", val);
+const MODEL_LABELS = {
+    auto: "Auto", gemini: "Gemini 2.5", groq: "Groq",
+    cerebras: "Cerebras", together: "Together", deepseek: "DeepSeek",
+};
+
+function toggleModelMenu() {
+    document.getElementById("modelMenu").classList.toggle("open");
 }
+
+function selectModel(el) {
+    const value = el.dataset.model;
+    const label = el.dataset.label;
+    localStorage.setItem("modelPreference", value);
+    const btnLabel = document.getElementById("modelBtnLabel");
+    if (btnLabel) btnLabel.textContent = label;
+    document.querySelectorAll(".model-option").forEach((o) => o.classList.remove("active"));
+    el.classList.add("active");
+    document.getElementById("modelMenu").classList.remove("open");
+}
+
+// Close model menu on outside click
+document.addEventListener("click", function (e) {
+    const menu = document.getElementById("modelMenu");
+    const btn = document.getElementById("modelBtn");
+    if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
+        menu.classList.remove("open");
+    }
+});
 
 (function initModel() {
     const saved = localStorage.getItem("modelPreference");
-    const sel = document.getElementById("modelSelect");
-    if (saved && sel) sel.value = saved;
+    if (!saved) return;
+    const btnLabel = document.getElementById("modelBtnLabel");
+    if (btnLabel) btnLabel.textContent = MODEL_LABELS[saved] || "Auto";
+    const option = document.querySelector(`.model-option[data-model="${saved}"]`);
+    if (option) {
+        document.querySelectorAll(".model-option").forEach((o) => o.classList.remove("active"));
+        option.classList.add("active");
+    }
 })();
 
 /* ── MOBILE SIDEBAR ── */
@@ -151,12 +182,14 @@ async function updateCity() {
     alert("City saved: " + city);
 }
 
-/* ── WELCOME STATE ── */
+/* ── WELCOME & SUGGESTIONS ── */
 function updateWelcomeState() {
     const welcome = document.getElementById("welcome");
-    if (!welcome) return;
+    const pills = document.getElementById("suggestionPills");
     const msgs = document.querySelectorAll("#chatbox .msg-row");
-    welcome.style.display = msgs.length === 0 ? "flex" : "none";
+    const isEmpty = msgs.length === 0;
+    if (welcome) welcome.style.display = isEmpty ? "flex" : "none";
+    if (pills) pills.style.display = isEmpty ? "flex" : "none";
 }
 
 function fillPrompt(text) {
@@ -213,7 +246,7 @@ function autoGrow(el) {
     });
 })();
 
-/* ── ADD MESSAGE (history / non-streaming) ── */
+/* ── ADD MESSAGE ── */
 function addMessage(sender, text, imageDataUrl) {
     const box = document.getElementById("chatbox");
     const row = document.createElement("div");
@@ -266,7 +299,6 @@ function addMessage(sender, text, imageDataUrl) {
     return row;
 }
 
-/* Creates an empty streaming bot bubble and returns the bubble element + copy button */
 function addStreamingBotBubble() {
     const box = document.getElementById("chatbox");
     const row = document.createElement("div");
