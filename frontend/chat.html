@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f0f4f8" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Sentaur AI – Chat</title>
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css">
+    <script src="marked.min.js"></script>
+    <style>
+        /* Hide fixed sidebar on desktop — replaced by floating panel */
+        @media (min-width: 769px) { .sidebar { display: none !important; } }
+
+        /* App menu section label — matches fp-title style */
+        .ami-section-label {
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .07em; color: var(--text); opacity: .45;
+            padding: 10px 12px 2px; pointer-events: none; user-select: none;
+        }
+        /* Tool sub-items sit slightly indented under the section label */
+        .app-menu-item.ami-sub { padding-left: 20px; font-size: 13px; }
+
+        /* ── Floating Panels ── */
+        .float-panel {
+            position: fixed;
+            background: var(--model-menu-bg, #fff);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,.18);
+            z-index: 500;
+            width: 250px;
+            display: none;
+            overflow: hidden;
+        }
+        .float-panel.fp-open { display: block; animation: fadeIn .15s ease; }
+
+        .fp-hdr {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 9px 13px; border-bottom: 1px solid var(--border);
+            cursor: grab; user-select: none;
+            background: rgba(74,108,247,.05);
+        }
+        .fp-hdr:active { cursor: grabbing; }
+        .fp-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text); opacity: .65; }
+        .fp-close { background: none; border: none; font-size: 18px; line-height: 1; padding: 0 2px; cursor: pointer; color: var(--text); opacity: .35; font-family: inherit; transition: opacity .15s; }
+        .fp-close:hover { opacity: .9; }
+        .fp-body { padding: 8px; max-height: 460px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+        /* Individual security tool panels */
+        .fp-tool-panel { width: 420px; }
+        .fp-tool-panel .fp-body { padding: 0; height: 520px; max-height: 70vh; overflow: hidden; }
+        .fp-tool-panel .fp-body iframe { display: block; width: 100%; height: 100%; border: none; }
+
+        /* Chrome-style tab groups */
+        .fp-tab-group { width: 420px; }
+        .fp-tab-group .fp-hdr { padding: 0; }
+        .ftg-hdr { min-height: 40px; }
+        .ftg-tabbar { display: flex; flex: 1; min-width: 0; align-items: stretch; overflow-x: auto; scrollbar-width: none; }
+        .ftg-tabbar::-webkit-scrollbar { display: none; }
+        .ftg-tab { display: flex; align-items: center; gap: 4px; padding: 0 10px; font-size: 12px; color: var(--text); opacity: .5; border-right: 1px solid var(--border); transition: opacity .12s, background .12s; cursor: pointer; user-select: none; min-height: 40px; flex: 0 0 auto; max-width: 130px; min-width: 76px; overflow: hidden; }
+        .ftg-tab:hover { opacity: .8; background: rgba(74,108,247,.05); }
+        .ftg-tab.active { opacity: 1; background: rgba(74,108,247,.1); }
+        .ftg-tab-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ftg-tab-close { background: none; border: none; cursor: pointer; padding: 0 2px; font-size: 15px; line-height: 1; color: var(--text); opacity: .35; font-family: inherit; flex-shrink: 0; }
+        .ftg-tab-close:hover { opacity: .9; }
+        .ftg-body { position: relative; height: 520px; max-height: 70vh; overflow: hidden; }
+        .ftg-frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+
+        /* Highlight when a panel is being dragged over another (merge preview) */
+        .fp-merge-target { box-shadow: 0 0 0 2px #4a6cf7, 0 0 0 7px rgba(74,108,247,.18) !important; }
+
+        /* Snap ghost overlay — same blue glow treatment as the message box */
+        #snap-ghost {
+            position: fixed; pointer-events: none; z-index: 499;
+            background: rgba(74,108,247,.06);
+            border: 1.5px solid #4a6cf7;
+            box-shadow: 0 0 0 5px rgba(74,108,247,.15);
+            box-sizing: border-box; display: none;
+            transition: left .1s ease, top .1s ease, width .1s ease, height .1s ease,
+                        border-radius .1s ease, box-shadow .1s ease;
+        }
+        /* Smooth snap animation on drop */
+        .float-panel.fp-snapping {
+            transition: left .2s cubic-bezier(.4,0,.2,1), top .2s cubic-bezier(.4,0,.2,1),
+                        width .2s cubic-bezier(.4,0,.2,1), height .2s cubic-bezier(.4,0,.2,1),
+                        border-radius .2s cubic-bezier(.4,0,.2,1);
+        }
+
+        /* Splitscreen: main chat area shrinks to avoid docked panels */
+        .layout {
+            transition: padding-left .2s cubic-bezier(.4,0,.2,1),
+                        padding-right .2s cubic-bezier(.4,0,.2,1),
+                        padding-top .2s cubic-bezier(.4,0,.2,1);
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar-overlay"    id="sidebarOverlay"    onclick="closeSidebar()"></div>
+<div class="model-menu-overlay" id="modelMenuOverlay" onclick="closeModelMenu(); closeAppMenu()"></div>
+
+<div class="layout">
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <p class="sidebar-heading">Conversations</p>
+        <div id="history"></div>
+    </div>
+
+    <!-- Main Chat Area -->
+    <div class="chat-area">
+
+        <!-- Top Bar -->
+        <div class="topbar">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <button class="hamburger" onclick="toggleSidebar()">⋮</button>
+                <img src="logo.jpg" alt="Sentaur AI" class="topbar-logo">
+            </div>
+
+            <!-- App Menu -->
+            <div class="app-menu-wrap" id="appMenuWrap">
+                <button class="app-menu-btn" id="appMenuBtn" onclick="toggleAppMenu()" aria-label="Menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="app-menu-dropdown" id="appMenuDropdown">
+                    <div class="ami-section-label">General</div>
+                    <button class="app-menu-item ami-sub" onclick="newConversation(); closeAppMenu()">
+                        <span class="ami-icon">✏️</span> New Chat
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="fpToggle('fp-conv'); closeAppMenu()">
+                        <span class="ami-icon">💬</span> Conversations
+                    </button>
+                    <div class="ami-section-label">Security Tools</div>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-hash','hash')">
+                        <span class="ami-icon">🔍</span> Hash ID
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-encoder','encoder')">
+                        <span class="ami-icon">⇄</span> Encoder
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-jwt','jwt')">
+                        <span class="ami-icon">🔑</span> JWT Decoder
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-cipher','cipher')">
+                        <span class="ami-icon">🔐</span> Cipher Tools
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-regex','regex')">
+                        <span class="ami-icon">✦</span> Regex Tester
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-headers','headers')">
+                        <span class="ami-icon">🛡️</span> HTTP Headers
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-strings','strings')">
+                        <span class="ami-icon">🔎</span> String Extractor
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-dns','dns')">
+                        <span class="ami-icon">🌐</span> DNS Lookup
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-whois','whois')">
+                        <span class="ami-icon">📋</span> WHOIS
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-cve','cve')">
+                        <span class="ami-icon">🐛</span> CVE Lookup
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-ip','ip')">
+                        <span class="ami-icon">🌍</span> IP Lookup
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-subdomains','subdomains')">
+                        <span class="ami-icon">🔭</span> Subdomains
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-password','password')">
+                        <span class="ami-icon">🔒</span> Password
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-baseconv','baseconv')">
+                        <span class="ami-icon">⬡</span> Base Converter
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-threatintel','threatintel')">
+                        <span class="ami-icon">☣</span> Threat Intel
+                    </button>
+                    <div class="ami-section-label">Preferences</div>
+                    <button class="app-menu-item ami-sub" id="darkModeItem" onclick="toggleDarkMode(); updateDarkModeItem()">
+                        <span class="ami-icon" id="darkModeIcon">🌙</span>
+                        <span id="darkModeLabel">Dark Mode</span>
+                        <span class="ami-toggle" id="darkToggle"></span>
+                    </button>
+                    <a class="app-menu-item ami-sub" href="settings.html">
+                        <span class="ami-icon">⚙️</span> Settings
+                    </a>
+                    <div class="ami-divider"></div>
+                    <button class="app-menu-item danger" onclick="logout()">
+                        <span class="ami-icon">🚪</span> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chatbox -->
+        <div id="chatbox" class="chatbox">
+            <div id="welcome" class="welcome-state">
+                <div class="welcome-logo">S</div>
+                <h3>How can I help you today?</h3>
+            </div>
+        </div>
+
+        <!-- Typing Indicator -->
+        <div id="typing" class="msg-row bot" style="display:none;">
+            <div class="avatar bot-avatar">S</div>
+            <div class="bubble typing-bubble">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+        </div>
+
+        <!-- Input Section -->
+        <div class="copilot-input-section">
+
+            <div id="suggestionPills" class="suggestion-pills">
+                <button class="suggestion-pill" onclick="fillPrompt('Explain SQL injection and show me a real example')">Explain SQL injection</button>
+                <button class="suggestion-pill" onclick="fillPrompt('Build a threat model for my web application')">Build a threat model</button>
+                <button class="suggestion-pill" onclick="fillPrompt('Teach me OSINT investigation techniques')">OSINT investigation</button>
+                <button class="suggestion-pill" onclick="fillPrompt('How do I detect and find XSS vulnerabilities?')">Find XSS vulnerabilities</button>
+                <button class="suggestion-pill" onclick="fillPrompt('Help me decode or crack this cipher')">Crack a cipher</button>
+                <button class="suggestion-pill" onclick="fillPrompt('Analyze this suspicious malware behavior')">Analyze malware</button>
+                <button class="suggestion-pill" onclick="fillPrompt('Help me solve a CTF challenge')">CTF challenge help</button>
+                <button class="suggestion-pill" onclick="fillPrompt('Explain a recent critical CVE and how to patch it')">Explain a CVE</button>
+            </div>
+
+            <div class="copilot-input-box">
+                <div id="imgPreview" class="img-preview"></div>
+                <textarea id="msg" rows="1" placeholder="Message Sentaur AI"></textarea>
+                <div class="copilot-toolbar">
+                    <div class="copilot-toolbar-left">
+                        <button class="copilot-attach-btn" onclick="document.getElementById('imgInput').click()" title="Attach image">+</button>
+                        <input type="file" id="imgInput" accept="image/*" multiple style="display:none" onchange="handleImages(event)">
+                        <div class="model-selector-wrap">
+                            <button class="copilot-model-btn" id="modelBtn" onclick="toggleModelMenu()">
+                                <span id="modelBtnLabel">Auto</span>
+                                <span class="model-chevron">∨</span>
+                            </button>
+                            <div class="copilot-model-menu" id="modelMenu">
+                                <div class="model-option active" data-model="auto" data-label="Auto" onclick="selectModel(this)">
+                                    <div class="model-option-icon" style="font-size:20px;line-height:22px;text-align:center;width:22px;height:22px;">❋</div>
+                                    <div class="model-option-text"><strong>Auto</strong><small>Picks the best available model</small></div>
+                                </div>
+                                <div class="model-option" data-model="gemini" data-label="Gemini" onclick="selectModel(this)">
+                                    <div class="model-option-icon"><img src="https://www.google.com/s2/favicons?domain=gemini.google.com&sz=32" alt="Gemini"></div>
+                                    <div class="model-option-text"><strong>Gemini</strong><small>Google's multimodal model</small></div>
+                                </div>
+                                <div class="model-option" data-model="local" data-label="Ollama" onclick="selectModel(this)">
+                                    <div class="model-option-icon"><img src="https://www.google.com/s2/favicons?domain=ollama.com&sz=32" alt="Ollama"></div>
+                                    <div class="model-option-text"><strong>Ollama</strong><small>Local model running on your machine</small></div>
+                                </div>
+                                <div class="model-option" data-model="groq" data-label="Groq" onclick="selectModel(this)">
+                                    <div class="model-option-icon"><img src="groq-logo.png" alt="Groq"></div>
+                                    <div class="model-option-text"><strong>Groq / Llama</strong><small>Ultra-fast Llama 3.3 70B</small></div>
+                                </div>
+                                <div class="model-option" data-model="cerebras" data-label="Cerebras" onclick="selectModel(this)">
+                                    <div class="model-option-icon"><img src="https://www.google.com/s2/favicons?domain=cerebras.ai&sz=32" alt="Cerebras"></div>
+                                    <div class="model-option-text"><strong>Cerebras</strong><small>High-speed Llama inference</small></div>
+                                </div>
+                                <div class="model-option" data-model="openrouter" data-label="OpenRouter" onclick="selectModel(this)">
+                                    <div class="model-option-icon"><img src="https://www.google.com/s2/favicons?domain=openrouter.ai&sz=32" alt="OpenRouter"></div>
+                                    <div class="model-option-text"><strong>OpenRouter / Llama 3.3</strong><small>Free Llama 70B via OpenRouter</small></div>
+                                </div>
+                                <div class="model-option" data-model="deepseek" data-label="DeepSeek" onclick="selectModel(this)">
+                                    <div class="model-option-icon"><img src="https://www.google.com/s2/favicons?domain=deepseek.com&sz=32" alt="DeepSeek"></div>
+                                    <div class="model-option-text"><strong>DeepSeek</strong><small>Strong reasoning model</small></div>
+                                </div>
+                                <div class="model-option" data-model="sambanova" data-label="SambaNova" onclick="selectModel(this)">
+                                    <div class="model-option-icon"><img src="https://www.google.com/s2/favicons?domain=sambanova.ai&sz=32" alt="SambaNova"></div>
+                                    <div class="model-option-text"><strong>SambaNova</strong><small>Free Llama 3.3 70B</small></div>
+                                </div>
+                                <div class="model-option" data-model="nvidia" data-label="NVIDIA" onclick="selectModel(this)">
+                                    <div class="model-option-icon"><img src="https://www.google.com/s2/favicons?domain=nvidia.com&sz=32" alt="NVIDIA"></div>
+                                    <div class="model-option-text"><strong>NVIDIA NIM</strong><small>Free Llama 3.3 70B</small></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="copilot-toolbar-right">
+                        <button class="copilot-mic-btn" id="micBtn" onclick="toggleMic()" title="Voice input">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v7a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm7 8a1 1 0 0 1 1 1 8 8 0 0 1-7 7.938V21h2a1 1 0 0 1 0 2H9a1 1 0 0 1 0-2h2v-1.062A8 8 0 0 1 4 12a1 1 0 0 1 2 0 6 6 0 0 0 12 0 1 1 0 0 1 1-1z"/>
+                            </svg>
+                        </button>
+                        <button class="copilot-send-btn" onclick="sendMessage()">&#9658;</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<!-- ── Floating Panels ── -->
+<div class="float-panel" id="fp-conv" style="top:85px;left:20px">
+    <div class="fp-hdr">
+        <span class="fp-title">Conversations</span>
+        <button class="fp-close" onclick="fpClose('fp-conv')">×</button>
+    </div>
+    <div class="fp-body" id="fp-conv-body">
+        <!-- #history moved here by JS on desktop -->
+    </div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-hash" style="top:85px;left:290px">
+    <div class="fp-hdr"><span class="fp-title">Hash Identifier</span><button class="fp-close" onclick="fpClose('fp-hash')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#hash" title="Hash Identifier" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-encoder" style="top:105px;left:310px">
+    <div class="fp-hdr"><span class="fp-title">Encoder / Decoder</span><button class="fp-close" onclick="fpClose('fp-encoder')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#encoder" title="Encoder / Decoder" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-jwt" style="top:125px;left:330px">
+    <div class="fp-hdr"><span class="fp-title">JWT Decoder</span><button class="fp-close" onclick="fpClose('fp-jwt')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#jwt" title="JWT Decoder" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-cipher" style="top:145px;left:350px">
+    <div class="fp-hdr"><span class="fp-title">Cipher Tools</span><button class="fp-close" onclick="fpClose('fp-cipher')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#cipher" title="Cipher Tools" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-regex" style="top:165px;left:370px">
+    <div class="fp-hdr"><span class="fp-title">Regex Tester</span><button class="fp-close" onclick="fpClose('fp-regex')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#regex" title="Regex Tester" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-headers" style="top:185px;left:390px">
+    <div class="fp-hdr"><span class="fp-title">HTTP Headers</span><button class="fp-close" onclick="fpClose('fp-headers')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#headers" title="HTTP Header Analyzer" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-strings" style="top:205px;left:410px">
+    <div class="fp-hdr"><span class="fp-title">String Extractor</span><button class="fp-close" onclick="fpClose('fp-strings')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#strings" title="String Extractor" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-dns" style="top:225px;left:430px">
+    <div class="fp-hdr"><span class="fp-title">DNS Lookup</span><button class="fp-close" onclick="fpClose('fp-dns')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#dns" title="DNS Lookup" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-whois" style="top:245px;left:450px">
+    <div class="fp-hdr"><span class="fp-title">WHOIS</span><button class="fp-close" onclick="fpClose('fp-whois')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#whois" title="WHOIS Lookup" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-cve" style="top:265px;left:470px">
+    <div class="fp-hdr"><span class="fp-title">CVE Lookup</span><button class="fp-close" onclick="fpClose('fp-cve')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#cve" title="CVE Lookup" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-ip" style="top:285px;left:490px">
+    <div class="fp-hdr"><span class="fp-title">IP Lookup</span><button class="fp-close" onclick="fpClose('fp-ip')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#ip" title="IP Lookup" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-subdomains" style="top:305px;left:510px">
+    <div class="fp-hdr"><span class="fp-title">Subdomains</span><button class="fp-close" onclick="fpClose('fp-subdomains')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#subdomains" title="Subdomain Finder" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-password" style="top:325px;left:530px">
+    <div class="fp-hdr"><span class="fp-title">Password Analyzer</span><button class="fp-close" onclick="fpClose('fp-password')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#password" title="Password Analyzer" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-baseconv" style="top:345px;left:550px">
+    <div class="fp-hdr"><span class="fp-title">Base Converter</span><button class="fp-close" onclick="fpClose('fp-baseconv')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#baseconv" title="Number Base Converter" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-threatintel" style="top:365px;left:570px">
+    <div class="fp-hdr"><span class="fp-title">Threat Intel</span><button class="fp-close" onclick="fpClose('fp-threatintel')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#threatintel" title="Threat Intel" loading="lazy"></iframe></div>
+</div>
+
+<script src="script.js"></script>
+<script>
+(function () {
+    var DESKTOP = function () { return window.innerWidth >= 769; };
+    var dragging = null, offX = 0, offY = 0, dragW = 0;
+    var SNAP_PX = 80; // px from screen edge that activates the snap zone
+    var dockedZones = { left: null, right: null, top: null }; // zone -> panel id
+
+    function updateLayoutOffset() {
+        var layout = document.querySelector('.layout');
+        if (!layout) return;
+        layout.style.paddingLeft  = dockedZones.left  ? '260px' : '';
+        layout.style.paddingRight = dockedZones.right ? '260px' : '';
+        layout.style.paddingTop   = dockedZones.top   ? '220px' : '';
+    }
+
+    // Recompute which zones are occupied by currently-open docked panels
+    // and resize the chat layout to make room for them (true split-screen).
+    function syncDockedZones() {
+        dockedZones = { left: null, right: null, top: null };
+        document.querySelectorAll('.float-panel.fp-open').forEach(function (p) {
+            if (p.dataset.snapped) dockedZones[p.dataset.snapped] = p.id;
+        });
+        updateLayoutOffset();
+    }
+
+    // Ghost overlay that previews the docked position
+    var ghost = document.createElement('div');
+    ghost.id = 'snap-ghost';
+    document.body.appendChild(ghost);
+
+    function getZone(cx, cy) {
+        var W = window.innerWidth;
+        if (cx < SNAP_PX)     return 'left';
+        if (cx > W - SNAP_PX) return 'right';
+        if (cy < SNAP_PX)     return 'top';
+        return null;
+    }
+
+    function zoneStyle(zone) {
+        var W = window.innerWidth, H = window.innerHeight, PW = 260;
+        if (zone === 'left')  return { l: 0,      t: 0, w: PW, h: H,   r: '0 12px 12px 0' };
+        if (zone === 'right') return { l: W - PW, t: 0, w: PW, h: H,   r: '12px 0 0 12px' };
+        if (zone === 'top')   return { l: 0,      t: 0, w: W,  h: 220, r: '0 0 12px 12px' };
+    }
+
+    function applySnap(panel, zone) {
+        // only one panel may occupy a given zone at a time
+        if (panel.classList.contains('fp-open')) {
+            document.querySelectorAll('.float-panel.fp-open').forEach(function (p) {
+                if (p !== panel && p.dataset.snapped === zone) unsnap(p);
+            });
+        }
+
+        var s = zoneStyle(zone);
+        panel.style.left = s.l + 'px'; panel.style.top    = s.t + 'px';
+        panel.style.width = s.w + 'px'; panel.style.height = s.h + 'px';
+        panel.style.borderRadius = s.r;
+        var b = panel.querySelector('.fp-body') || panel.querySelector('.ftg-body');
+        if (b) b.style.maxHeight = b.style.height = 'calc(100% - 42px)';
+        panel.dataset.snapped = zone;
+        localStorage.setItem('fp-snap-' + panel.id, zone);
+        localStorage.removeItem('fp-pos-' + panel.id);
+
+        syncDockedZones();
+    }
+
+    function unsnap(panel) {
+        var rect = panel.getBoundingClientRect();
+        delete panel.dataset.snapped;
+        panel.style.width = panel.style.height = panel.style.borderRadius = '';
+        var b = panel.querySelector('.fp-body') || panel.querySelector('.ftg-body');
+        if (b) b.style.maxHeight = b.style.height = '';
+        panel.style.left = Math.max(0, rect.left) + 'px';
+        panel.style.top  = Math.max(0, rect.top)  + 'px';
+        localStorage.removeItem('fp-snap-' + panel.id);
+
+        syncDockedZones();
+    }
+
+    function showGhost(zone) {
+        var s = zoneStyle(zone);
+        ghost.style.display = 'block';
+        ghost.style.left   = s.l + 'px';
+        ghost.style.top    = s.t + 'px';
+        ghost.style.width  = s.w + 'px';
+        ghost.style.height = s.h + 'px';
+        ghost.style.borderRadius = s.r;
+    }
+    function hideGhost() { ghost.style.cssText = 'display:none'; }
+
+    function bringFront(el) {
+        document.querySelectorAll('.float-panel').forEach(function (p) { p.style.zIndex = 500; });
+        el.style.zIndex = 501;
+    }
+
+    window.fpToggle = function (id) {
+        if (!DESKTOP()) { if (id === 'fp-conv') toggleSidebar(); return; }
+        var el = document.getElementById(id);
+        // If panel is inside a tab group, activate it there instead of re-opening it
+        if (el.dataset.groupId) {
+            var g = tabGroups[el.dataset.groupId];
+            if (g) { ftgActivate(el.dataset.groupId, id); bringFront(g.el); }
+            return;
+        }
+        var open = el.classList.toggle('fp-open');
+        localStorage.setItem('fp-open-' + id, open ? '1' : '0');
+        if (open) bringFront(el);
+        syncDockedZones();
+    };
+    window.fpClose = function (id) {
+        var el = document.getElementById(id);
+        el.classList.remove('fp-open');
+        localStorage.setItem('fp-open-' + id, '0');
+        syncDockedZones();
+    };
+
+    // ── Tab Groups ──
+    var tabGroups = {};
+    var groupCounter = 0;
+    var mergeTarget = null;
+
+    var PANEL_LABELS = {
+        'fp-hash': '🔍 Hash ID', 'fp-encoder': '⇄ Encoder', 'fp-jwt': '🔑 JWT',
+        'fp-cipher': '🔐 Cipher', 'fp-regex': '✦ Regex',
+        'fp-headers': '🛡️ Headers', 'fp-strings': '🔎 Strings',
+        'fp-dns': '🌐 DNS', 'fp-whois': '📋 WHOIS', 'fp-cve': '🐛 CVE',
+        'fp-ip': '🌍 IP', 'fp-subdomains': '🔭 Subdomains', 'fp-password': '🔒 Password', 'fp-baseconv': '⬡ Base',
+        'fp-threatintel': '☣ Threat Intel'
+    };
+
+    function getOverlapTarget(draggingEl, cx, cy) {
+        var best = null;
+        document.querySelectorAll('.fp-tool-panel.fp-open, .fp-tab-group.fp-open').forEach(function (el) {
+            if (el === draggingEl) return;
+            var r = el.getBoundingClientRect();
+            if (cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) best = el;
+        });
+        return best;
+    }
+
+    function ftgActivate(gid, panelId) {
+        var g = tabGroups[gid]; if (!g) return;
+        g.active = panelId;
+        g.panels.forEach(function (p) {
+            if (p.iframe) p.iframe.style.display = p.id === panelId ? 'block' : 'none';
+            p.tab.classList.toggle('active', p.id === panelId);
+        });
+    }
+
+    function addToGroup(gid, panel) {
+        var g = tabGroups[gid]; if (!g) return;
+        var pid    = panel.id;
+        var fpBody = panel.querySelector('.fp-body');
+        var iframe = fpBody ? fpBody.querySelector('iframe') : null;
+        var body   = g.el.querySelector('.ftg-body');
+        var tabbar = g.el.querySelector('.ftg-tabbar');
+
+        if (iframe) {
+            iframe.classList.add('ftg-frame');
+            iframe.style.display = 'none';
+            body.appendChild(iframe);
+        }
+
+        var tab = document.createElement('div');
+        tab.className = 'ftg-tab';
+        tab.dataset.panel = pid;
+        tab.innerHTML = '<span class="ftg-tab-label">' + (PANEL_LABELS[pid] || pid) + '</span>' +
+            '<button class="ftg-tab-close" onclick="ftgDetach(\'' + gid + '\',\'' + pid + '\')">×</button>';
+        tab.addEventListener('click', function (e) {
+            if (e.target.classList.contains('ftg-tab-close')) return;
+            ftgActivate(gid, pid);
+        });
+        tabbar.appendChild(tab);
+
+        g.panels.push({ id: pid, iframe: iframe, tab: tab, src: panel });
+        panel.classList.remove('fp-open');
+        panel.style.display = 'none';
+        panel.dataset.groupId = gid;
+        // Clear individual persistence so restoreState won't re-snap/re-position this panel on reload
+        localStorage.removeItem('fp-snap-' + pid);
+        localStorage.removeItem('fp-pos-' + pid);
+    }
+
+    function createTabGroup(panelA, panelB) {
+        var gid = 'ftg-' + (++groupCounter);
+        var grp = document.createElement('div');
+        grp.className = 'float-panel fp-tab-group fp-open';
+        grp.id = gid;
+        grp.style.left = panelA.style.left;
+        grp.style.top  = panelA.style.top;
+        grp.innerHTML =
+            '<div class="fp-hdr ftg-hdr">' +
+            '<div class="ftg-tabbar" id="' + gid + '-tabbar"></div>' +
+            '<button class="fp-close" onclick="ftgClose(\'' + gid + '\')">×</button>' +
+            '</div>' +
+            '<div class="ftg-body" id="' + gid + '-body"></div>';
+        document.body.appendChild(grp);
+        tabGroups[gid] = { el: grp, panels: [], active: null };
+        addToGroup(gid, panelA);
+        addToGroup(gid, panelB);
+        ftgActivate(gid, panelA.id);
+        bringFront(grp);
+        return grp;
+    }
+
+    function saveTabGroups() {
+        var data = Object.keys(tabGroups).map(function (gid) {
+            var g = tabGroups[gid];
+            return {
+                panels: g.panels.map(function (p) { return p.id; }),
+                active: g.active,
+                pos:    { l: parseInt(g.el.style.left) || 0, t: parseInt(g.el.style.top) || 0 },
+                snap:   g.el.dataset.snapped || null
+            };
+        });
+        localStorage.setItem('fp-tab-groups', JSON.stringify(data));
+    }
+
+    function mergeInto(dragged, target) {
+        if (target.classList.contains('fp-tab-group')) {
+            addToGroup(target.id, dragged);
+            ftgActivate(target.id, dragged.id);
+            bringFront(target);
+        } else {
+            createTabGroup(target, dragged);
+        }
+        saveTabGroups();
+    }
+
+    window.ftgDetach = function (gid, panelId) {
+        var g = tabGroups[gid]; if (!g) return;
+        var idx = g.panels.findIndex(function (p) { return p.id === panelId; });
+        if (idx < 0) return;
+        var pd = g.panels[idx];
+        var origPanel = pd.src;
+        var fpBody = origPanel.querySelector('.fp-body');
+
+        if (fpBody && pd.iframe) {
+            pd.iframe.classList.remove('ftg-frame');
+            pd.iframe.style.display = '';
+            fpBody.appendChild(pd.iframe);
+        }
+
+        g.panels.splice(idx, 1);
+        pd.tab.remove();
+        delete origPanel.dataset.groupId;
+
+        origPanel.style.left = ((parseInt(g.el.style.left) || 0) + 30) + 'px';
+        origPanel.style.top  = ((parseInt(g.el.style.top)  || 0) + 30) + 'px';
+        origPanel.style.display = '';
+        origPanel.classList.add('fp-open');
+        localStorage.setItem('fp-open-' + panelId, '1');
+        bringFront(origPanel);
+
+        if (g.panels.length === 1) {
+            var last = g.panels[0];
+            var lastBody = last.src.querySelector('.fp-body');
+            if (lastBody && last.iframe) {
+                last.iframe.classList.remove('ftg-frame');
+                last.iframe.style.display = '';
+                lastBody.appendChild(last.iframe);
+            }
+            last.src.style.left = g.el.style.left;
+            last.src.style.top  = g.el.style.top;
+            last.src.style.display = '';
+            last.src.classList.add('fp-open');
+            delete last.src.dataset.groupId;
+            localStorage.setItem('fp-open-' + last.id, '1');
+            bringFront(last.src);
+            g.el.remove();
+            delete tabGroups[gid];
+        } else if (g.active === panelId) {
+            ftgActivate(gid, g.panels[0].id);
+        }
+        syncDockedZones();
+        saveTabGroups();
+    };
+
+    window.ftgClose = function (gid) {
+        var g = tabGroups[gid]; if (!g) return;
+        g.panels.forEach(function (pd) {
+            var fpBody = pd.src.querySelector('.fp-body');
+            if (fpBody && pd.iframe) {
+                pd.iframe.classList.remove('ftg-frame');
+                pd.iframe.style.display = '';
+                fpBody.appendChild(pd.iframe);
+            }
+            pd.src.style.display = '';
+            delete pd.src.dataset.groupId;
+            localStorage.setItem('fp-open-' + pd.id, '0');
+        });
+        g.el.remove();
+        delete tabGroups[gid];
+        syncDockedZones();
+        saveTabGroups();
+    };
+
+    // ── Drag ──
+    document.addEventListener('mousedown', function (e) {
+        var hdr = e.target.closest && e.target.closest('.fp-hdr');
+        if (!hdr) return;
+        if (e.target.classList.contains('fp-close') || e.target.classList.contains('ftg-tab-close')) return;
+        if (e.target.classList.contains('ftg-tab') || e.target.closest('.ftg-tab')) return;
+        var panel = hdr.parentElement;
+        if (panel.dataset.snapped) unsnap(panel);
+        var rect = panel.getBoundingClientRect();
+        dragging = panel;
+        dragW    = panel.offsetWidth;
+        offX = e.clientX - rect.left;
+        offY = e.clientY - rect.top;
+        bringFront(panel);
+        // Prevent iframes from swallowing mousemove during drag
+        document.querySelectorAll('iframe').forEach(function (f) { f.style.pointerEvents = 'none'; });
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function (e) {
+        if (!dragging) return;
+        var x = Math.max(0, Math.min(e.clientX - offX, window.innerWidth  - dragW));
+        var y = Math.max(0, Math.min(e.clientY - offY, window.innerHeight - 40));
+        dragging.style.left = x + 'px';
+        dragging.style.top  = y + 'px';
+        var zone = getZone(e.clientX, e.clientY);
+        if (zone) {
+            showGhost(zone);
+            if (mergeTarget) { mergeTarget.classList.remove('fp-merge-target'); mergeTarget = null; }
+        } else {
+            hideGhost();
+            if (dragging.classList.contains('fp-tool-panel')) {
+                var over = getOverlapTarget(dragging, e.clientX, e.clientY);
+                if (over) {
+                    if (over !== mergeTarget) {
+                        if (mergeTarget) mergeTarget.classList.remove('fp-merge-target');
+                        mergeTarget = over;
+                        mergeTarget.classList.add('fp-merge-target');
+                    }
+                } else {
+                    if (mergeTarget) { mergeTarget.classList.remove('fp-merge-target'); mergeTarget = null; }
+                }
+            }
+        }
+    });
+
+    document.addEventListener('mouseup', function (e) {
+        if (!dragging) return;
+        // Restore iframe pointer events
+        document.querySelectorAll('iframe').forEach(function (f) { f.style.pointerEvents = ''; });
+        hideGhost();
+        if (mergeTarget) mergeTarget.classList.remove('fp-merge-target');
+        var panel  = dragging;
+        var target = mergeTarget;
+        dragging = null;
+        mergeTarget = null;
+        var zone = getZone(e.clientX, e.clientY);
+        if (target && panel.classList.contains('fp-tool-panel')) {
+            mergeInto(panel, target);
+        } else if (zone) {
+            panel.classList.add('fp-snapping');
+            applySnap(panel, zone);
+            setTimeout(function () { panel.classList.remove('fp-snapping'); }, 250);
+            if (panel.classList.contains('fp-tab-group')) saveTabGroups();
+        } else {
+            if (panel.classList.contains('fp-tab-group')) {
+                saveTabGroups();
+            } else {
+                localStorage.setItem('fp-pos-' + panel.id, JSON.stringify({
+                    l: parseInt(panel.style.left) || 0,
+                    t: parseInt(panel.style.top)  || 0
+                }));
+            }
+        }
+    });
+
+    // ── Init ──
+    function initConv() {
+        if (!DESKTOP()) return;
+        var hist = document.getElementById('history');
+        var body = document.getElementById('fp-conv-body');
+        if (hist && body && !body.contains(hist)) body.appendChild(hist);
+    }
+
+    function restoreState() {
+        if (!DESKTOP()) return;
+        ['fp-conv', 'fp-hash', 'fp-encoder', 'fp-jwt', 'fp-cipher', 'fp-regex', 'fp-headers', 'fp-strings', 'fp-dns', 'fp-whois', 'fp-cve', 'fp-ip', 'fp-subdomains', 'fp-password', 'fp-baseconv', 'fp-threatintel'].forEach(function (id) {
+            var el = document.getElementById(id);
+            var snap = localStorage.getItem('fp-snap-' + id);
+            if (snap) { applySnap(el, snap); return; }
+            var raw = localStorage.getItem('fp-pos-' + id);
+            if (!raw) return;
+            try { var p = JSON.parse(raw); el.style.left = p.l + 'px'; el.style.top = p.t + 'px'; } catch (e) {}
+        });
+    }
+
+    function restoreOpen() {
+        if (!DESKTOP()) return;
+        var any = false;
+        ['fp-conv', 'fp-hash', 'fp-encoder', 'fp-jwt', 'fp-cipher', 'fp-regex', 'fp-headers', 'fp-strings', 'fp-dns', 'fp-whois', 'fp-cve', 'fp-ip', 'fp-subdomains', 'fp-password', 'fp-baseconv', 'fp-threatintel'].forEach(function (id) {
+            if (localStorage.getItem('fp-open-' + id) === '1') {
+                document.getElementById(id).classList.add('fp-open');
+                any = true;
+            }
+        });
+        if (!any) {
+            var conv = document.getElementById('fp-conv');
+            conv.classList.add('fp-open');
+            // First-ever load: dock conversations to the right by default
+            if (!localStorage.getItem('fp-snap-fp-conv') && !localStorage.getItem('fp-pos-fp-conv')) {
+                applySnap(conv, 'left');
+            }
+        }
+    }
+
+    function restoreTabGroups() {
+        if (!DESKTOP()) return;
+        var raw = localStorage.getItem('fp-tab-groups');
+        if (!raw) return;
+        var data; try { data = JSON.parse(raw); } catch (e) { return; }
+        if (!Array.isArray(data)) return;
+        data.forEach(function (gd) {
+            if (!gd.panels || gd.panels.length < 2) return;
+            var panels = gd.panels.map(function (id) { return document.getElementById(id); });
+            if (panels.some(function (p) { return !p; })) return;
+            // Ensure panels are in a visible state so addToGroup can grab their iframes
+            panels.forEach(function (p) { p.classList.add('fp-open'); p.style.display = ''; });
+            var gid = 'ftg-' + (++groupCounter);
+            var grp = document.createElement('div');
+            grp.className = 'float-panel fp-tab-group fp-open';
+            grp.id = gid;
+            grp.style.left = (gd.pos ? gd.pos.l : 100) + 'px';
+            grp.style.top  = (gd.pos ? gd.pos.t : 100) + 'px';
+            grp.innerHTML =
+                '<div class="fp-hdr ftg-hdr">' +
+                '<div class="ftg-tabbar" id="' + gid + '-tabbar"></div>' +
+                '<button class="fp-close" onclick="ftgClose(\'' + gid + '\')">×</button>' +
+                '</div>' +
+                '<div class="ftg-body" id="' + gid + '-body"></div>';
+            document.body.appendChild(grp);
+            tabGroups[gid] = { el: grp, panels: [], active: null };
+            panels.forEach(function (p) { addToGroup(gid, p); });
+            var activeId = gd.active && gd.panels.indexOf(gd.active) >= 0 ? gd.active : gd.panels[0];
+            ftgActivate(gid, activeId);
+            if (gd.snap) applySnap(grp, gd.snap);
+        });
+    }
+
+    restoreState();
+    initConv();
+    restoreOpen();
+    restoreTabGroups();
+    syncDockedZones();
+
+    // Scroll tab bar horizontally with mouse wheel
+    document.addEventListener('wheel', function (e) {
+        var bar = e.target.closest && e.target.closest('.ftg-tabbar');
+        if (!bar) return;
+        e.preventDefault();
+        bar.scrollLeft += e.deltaY || e.deltaX;
+    }, { passive: false });
+
+    // Keep snapped-panel geometry correct as the viewport resizes
+    window.addEventListener('resize', function () {
+        if (!DESKTOP()) return;
+        document.querySelectorAll('.float-panel').forEach(function (p) {
+            if (!p.dataset.snapped) return;
+            var s = zoneStyle(p.dataset.snapped);
+            p.style.left = s.l + 'px'; p.style.top    = s.t + 'px';
+            p.style.width = s.w + 'px'; p.style.height = s.h + 'px';
+        });
+    });
+})();
+</script>
+</body>
+</html>

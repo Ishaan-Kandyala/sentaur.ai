@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentaur AI – Security Tools</title>
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <script>
+        if(localStorage.getItem('darkMode')==='true') document.documentElement.classList.add('dark');
+        window.addEventListener('message', function(e) {
+            if (e.data && e.data.type === 'darkMode')
+                document.documentElement.classList.toggle('dark', e.data.dark);
+        });
+    </script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --accent: #4a6cf7;
+            --input-bg: #ffffff;
+            --text-secondary: #6b7280;
+            --card-bg: #edf1f7;
+            --card-border: rgba(0,0,0,0.1);
+        }
+        body {
+            background: var(--bg, #f0f4f8);
+            color: var(--text, #1a1a2e);
+            min-height: 100vh;
+        }
+        html.dark body {
+            --bg: #111827;
+            --text: #e8edf5;
+            --border: rgba(255,255,255,0.06);
+            --accent: #6d8bff;
+            --input-bg: #0d1520;
+            --text-secondary: #94a3b8;
+            --card-bg: #1e2d42;
+            --card-border: rgba(255,255,255,0.15);
+            background: #111827;
+            color: #e8edf5;
+        }
+        html.dark .tools-title  { color: #e8edf5 !important; }
+        html.dark .tool-tab     { color: #94a3b8 !important; }
+        html.dark .tool-tab.active { color: #6d8bff !important; }
+        html.dark .tool-label   { color: #94a3b8 !important; }
+        html.dark .tool-input   { color: #e8edf5 !important; background: #0d1520 !important; border-color: rgba(255,255,255,0.15) !important; }
+        html.dark .tool-output  { color: #e8edf5 !important; background: #111827 !important; border-color: rgba(255,255,255,0.1) !important; }
+        html.dark .tool-card    { background: #1e2d42 !important; border-color: rgba(255,255,255,0.1) !important; }
+        html.dark .hash-name    { color: #e8edf5 !important; }
+        html.dark .hash-detail  { color: #94a3b8 !important; }
+        html.dark .hash-row     { background: #111827 !important; border-color: rgba(255,255,255,0.08) !important; }
+        html.dark .copy-btn     { color: #94a3b8 !important; border-color: rgba(255,255,255,0.15) !important; }
+        html.dark .preset-btn   { color: #94a3b8 !important; border-color: rgba(255,255,255,0.15) !important; }
+        html.dark .sub-tab      { color: #94a3b8 !important; border-color: rgba(255,255,255,0.15) !important; }
+        html.dark .match-count  { color: #94a3b8 !important; }
+        html.dark .regex-view   { color: #e8edf5 !important; background: #0d1520 !important; border-color: rgba(255,255,255,0.15) !important; }
+        html.dark .short-input  { color: #e8edf5 !important; background: #0d1520 !important; border-color: rgba(255,255,255,0.15) !important; }
+        html.dark .sub-from     { color: #94a3b8 !important; }
+        html.dark .sub-box      { color: #e8edf5 !important; background: #0d1520 !important; border-color: rgba(255,255,255,0.15) !important; }
+        html.dark .jwt-body     { color: #e8edf5 !important; background: #0d1520 !important; }
+        html.dark .tools-header { border-color: rgba(255,255,255,0.06) !important; }
+
+        /* Dark mode — general form elements */
+        html.dark { background: #111827; color: #e8edf5; }
+        html.dark body { background: #111827 !important; color: #e8edf5 !important; }
+        html.dark .tool-card { background: #1e2d42 !important; border-color: rgba(255,255,255,0.1) !important; }
+        html.dark .tool-input, html.dark select.short-input, html.dark input.short-input { color: #e8edf5 !important; background: #0d1520 !important; border-color: rgba(255,255,255,0.15) !important; }
+        html.dark .tool-output { color: #e8edf5 !important; background: #111827 !important; border-color: rgba(255,255,255,0.1) !important; }
+        html.dark .tool-btn.sec { background: rgba(255,255,255,0.08) !important; color: #e8edf5 !important; border-color: rgba(255,255,255,0.12) !important; }
+        html.dark .copy-btn { color: #94a3b8 !important; border-color: rgba(255,255,255,0.15) !important; }
+        /* Dark mode — DNS / WHOIS / IP shared rows */
+        html.dark .dns-table td, html.dark .dns-table th { border-color: rgba(255,255,255,0.08) !important; color: #e8edf5 !important; }
+        html.dark .dns-table th { color: #94a3b8 !important; }
+        html.dark .whois-row { border-color: rgba(255,255,255,0.08) !important; }
+        html.dark .whois-key { color: #94a3b8 !important; }
+        html.dark .whois-val { color: #e8edf5 !important; }
+        /* Dark mode — ext items (subdomains, strings) */
+        html.dark .ext-item { background: #111827 !important; border-color: rgba(255,255,255,0.08) !important; }
+        html.dark .ext-val { color: #e8edf5 !important; }
+        /* Dark mode — password analyzer */
+        html.dark .pw-stat { background: #111827 !important; border-color: rgba(255,255,255,0.08) !important; }
+        html.dark .pw-crack-row { background: #111827 !important; border-color: rgba(255,255,255,0.08) !important; color: #e8edf5 !important; }
+        html.dark .pw-meter { background: rgba(255,255,255,0.1) !important; }
+        html.dark .pw-toggle { color: #94a3b8 !important; }
+        /* Dark mode — base converter */
+        html.dark .base-result-row { border-color: rgba(255,255,255,0.08) !important; }
+        html.dark .base-result-val { color: #e8edf5 !important; }
+        /* Dark mode — hdr checks */
+        html.dark .hdr-check-row { background: #111827 !important; border-color: rgba(255,255,255,0.08) !important; }
+        html.dark .hdr-check-info { color: #94a3b8 !important; }
+        html.dark .parsed-table td { border-color: rgba(255,255,255,0.08) !important; color: #e8edf5 !important; }
+        /* Dark mode — hash rows */
+        html.dark .hash-row { background: #111827 !important; border-color: rgba(255,255,255,0.08) !important; }
+
+        .tools-page { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+        .tools-header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+        .tools-title { font-size: 20px; font-weight: 700; color: var(--text); }
+        .tools-back { display: none; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--card-border); background: none; color: var(--text); cursor: pointer; font-size: 18px; flex-shrink: 0; text-decoration: none; }
+        .tools-back:hover { background: var(--card-bg); }
+        html.dark .tools-back { border-color: rgba(255,255,255,0.12) !important; color: #e8edf5 !important; }
+        /* Hide redundant page header and tab bar when embedded — each panel shows one tool */
+        body.in-iframe .tools-header { display: none; }
+        body.in-iframe .tool-tabs { display: none; }
+        body.in-iframe .tools-page { padding-top: 12px; }
+        /* Ask AI button */
+        .ask-ai-btn { background: rgba(74,108,247,.12) !important; color: var(--accent) !important; border: 1px solid rgba(74,108,247,.25) !important; }
+        .ask-ai-btn:hover { background: rgba(74,108,247,.22) !important; opacity: 1 !important; }
+
+        .tool-tabs { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 2px; margin-bottom: 24px; border-bottom: 1px solid var(--border); scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .tool-tabs::-webkit-scrollbar { display: none; }
+        .tool-tab { padding: 8px 18px; border: none; background: none; color: var(--text-secondary); cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; flex-shrink: 0; }
+        .tool-tab:hover { color: var(--text); }
+        .tool-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+        /* ── Mobile layout ── */
+        @media (max-width: 640px) {
+            body:not(.in-iframe) .tools-back { display: flex; }
+            .tools-page { padding: 16px 12px 80px; }
+            .tools-header { margin-bottom: 16px; padding-bottom: 12px; }
+            .tools-title { font-size: 17px; }
+            .tool-card { padding: 14px 12px; }
+            .tool-tabs { margin-bottom: 16px; }
+            .tool-tab { padding: 8px 14px; font-size: 12px; }
+            .tool-input { font-size: 16px; } /* prevents iOS zoom on focus */
+            .short-input { font-size: 16px; }
+            .btn-row { gap: 6px; }
+            .tool-btn { padding: 9px 14px; font-size: 13px; }
+            .pw-stat-grid { grid-template-columns: 1fr 1fr; }
+            .scan-drop-zone { padding: 20px 12px; }
+            .base-row { flex-direction: column; align-items: stretch; }
+            .hdr-check-row { flex-wrap: wrap; gap: 6px; }
+        }
+
+        .tool-panel { display: none; }
+        .tool-panel.active { display: block; }
+
+        .tool-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; margin-bottom: 14px; }
+        .tool-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
+
+        .tool-input { width: 100%; background: var(--input-bg, var(--bg)); border: 1px solid var(--card-border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: 'Courier New', monospace; font-size: 13px; resize: vertical; box-sizing: border-box; transition: border-color .15s; }
+        .tool-input:focus { outline: none; border-color: var(--accent); }
+
+        .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+        .tool-btn { padding: 7px 16px; background: var(--accent); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .tool-btn:hover { opacity: .88; }
+        .tool-btn.sec { background: var(--border); color: var(--text); }
+        .copy-btn { padding: 5px 12px; background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text-secondary); cursor: pointer; font-size: 11px; }
+        .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        .tool-output { margin-top: 10px; padding: 12px; background: var(--bg); border: 1px solid var(--card-border); border-radius: 8px; font-family: 'Courier New', monospace; font-size: 13px; color: var(--text); min-height: 44px; white-space: pre-wrap; word-break: break-all; }
+
+        /* Hash */
+        .hash-list { display: flex; flex-direction: column; gap: 8px; }
+        .hash-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+        .badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+        .badge.high   { background: #14532d; color: #4ade80; }
+        .badge.medium { background: #422006; color: #fbbf24; }
+        .badge.low    { background: #450a0a; color: #f87171; }
+        .hash-name { font-weight: 600; font-size: 14px; }
+        .hash-detail { font-size: 12px; color: var(--text-secondary); }
+
+        /* Sub-tabs */
+        .sub-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 12px; }
+        .sub-tab { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 500; }
+        .sub-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+        /* JWT */
+        .jwt-parts { display: flex; flex-direction: column; gap: 10px; }
+        .jwt-part { border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+        .jwt-hdr { padding: 7px 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+        .c-blue   { background: #1e3a5f; color: #60a5fa; }
+        .c-green  { background: #14532d; color: #4ade80; }
+        .c-red    { background: #450a0a; color: #f87171; }
+        .jwt-body { padding: 12px; font-family: monospace; font-size: 12px; background: var(--bg); color: var(--text); white-space: pre-wrap; }
+        .jwt-status { display: inline-block; margin-bottom: 12px; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+        .jwt-ok  { background: #14532d; color: #4ade80; }
+        .jwt-exp { background: #450a0a; color: #f87171; }
+
+        /* Cipher */
+        .cipher-ctrl { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+        .short-input { background: var(--input-bg, var(--bg)); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 13px; }
+
+        .sub-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 4px; margin-bottom: 10px; }
+        .sub-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .sub-from { font-size: 10px; color: var(--text-secondary); font-family: monospace; }
+        .sub-box  { width: 24px; height: 24px; text-align: center; background: var(--input-bg, var(--bg)); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-family: monospace; font-size: 12px; padding: 0; }
+
+        /* Regex */
+        .preset-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+        .preset-btn { padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; font-size: 11px; }
+        .preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .regex-view { padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-family: monospace; font-size: 13px; white-space: pre-wrap; word-break: break-all; line-height: 1.65; min-height: 44px; }
+        mark.hl { background: rgba(99,102,241,.35); color: inherit; border-radius: 2px; }
+        .match-count { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+        .pat-row { display: flex; gap: 8px; }
+        .pat-input { flex: 1; }
+        .flag-input { width: 70px; }
+
+        /* XOR key */
+        .xor-row { margin-bottom: 10px; }
+
+        /* HTTP Header Analyzer */
+        .badge.ok   { background: #14532d; color: #4ade80; }
+        .badge.info { background: #1e3a5f; color: #60a5fa; }
+        .badge.warn { background: #422006; color: #fbbf24; }
+        .hdr-check-list { display: flex; flex-direction: column; gap: 8px; }
+        .hdr-check-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+        .hdr-check-right { flex: 1; min-width: 0; }
+        .hdr-check-name { font-weight: 600; font-size: 13px; color: var(--text); }
+        .hdr-check-val  { font-family: monospace; font-size: 11px; color: var(--accent); word-break: break-all; margin-top: 2px; }
+        .hdr-check-info { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+        .parsed-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .parsed-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: top; word-break: break-all; }
+        .parsed-table td:first-child { font-weight: 600; white-space: nowrap; color: var(--accent); padding-right: 12px; min-width: 160px; }
+        html.dark .hdr-check-name { color: #e8edf5 !important; }
+
+        /* DNS Lookup */
+        .dns-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .dns-table th { text-align: left; padding: 6px 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); border-bottom: 2px solid var(--border); }
+        .dns-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); font-family: monospace; vertical-align: top; }
+        .dns-table td:first-child { font-weight: 700; color: var(--accent); width: 52px; }
+        .dns-table td:nth-child(2) { color: var(--text-secondary); width: 56px; }
+        html.dark .dns-table td { border-color: rgba(255,255,255,0.07) !important; }
+
+        /* WHOIS */
+        .whois-row { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+        .whois-key { font-size: 11px; font-weight: 700; color: var(--text-secondary); width: 120px; flex-shrink: 0; padding-top: 1px; }
+        .whois-val { font-family: monospace; font-size: 12px; color: var(--text); word-break: break-all; }
+        html.dark .whois-row { border-color: rgba(255,255,255,0.07) !important; }
+        html.dark .whois-key { color: #94a3b8 !important; }
+
+        /* CVE */
+        .cve-score { display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 10px; margin-bottom: 12px; }
+        .cve-score-num { font-size: 32px; font-weight: 800; line-height: 1; }
+        .cve-score-sev { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+        .cve-score-sub { font-size: 10px; opacity: .65; margin-top: 2px; }
+        .sev-critical { background: #450a0a; color: #f87171; }
+        .sev-high     { background: #422006; color: #fbbf24; }
+        .sev-medium   { background: #1c2a10; color: #86efac; }
+        .sev-low      { background: #1e3a5f; color: #60a5fa; }
+        .sev-none     { background: var(--card-bg); color: var(--text-secondary); }
+        .cve-desc { font-size: 13px; line-height: 1.65; margin-bottom: 12px; color: var(--text); }
+        .cve-ref { display: block; font-size: 11px; color: var(--accent); word-break: break-all; margin-bottom: 3px; }
+        .cve-ref:hover { text-decoration: underline; }
+        html.dark .cve-ref { color: #6d8bff !important; }
+
+        /* Password Analyzer */
+        .pw-meter { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin: 6px 0 10px; }
+        .pw-meter-fill { height: 100%; border-radius: 4px; transition: width .3s, background .3s; }
+        .pw-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .pw-stat { padding: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; text-align: center; }
+        .pw-stat-num { font-size: 22px; font-weight: 700; }
+        .pw-stat-lbl { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .04em; }
+        .pw-warn { padding: 6px 10px; margin-bottom: 4px; background: rgba(251,191,36,.08); border: 1px solid rgba(251,191,36,.2); border-radius: 6px; font-size: 12px; color: #fbbf24; }
+        .pw-crack-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 5px; }
+        .pw-input-wrap { position: relative; }
+        .pw-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-secondary); font-size: 15px; line-height: 1; }
+
+        /* Number Base Converter */
+        .base-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .base-result-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+        .base-result-lbl { font-size: 11px; font-weight: 700; color: var(--text-secondary); width: 100px; flex-shrink: 0; }
+        .base-result-val { font-family: monospace; font-size: 13px; color: var(--text); word-break: break-all; flex: 1; }
+        html.dark .base-result-row { border-color: rgba(255,255,255,0.07) !important; }
+
+        /* Threat Intel */
+        .threat-row { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+        .threat-key { font-size: 11px; font-weight: 700; color: var(--text-secondary); width: 110px; flex-shrink: 0; padding-top: 1px; }
+        .threat-val { font-family: monospace; font-size: 12px; color: var(--text); word-break: break-all; flex: 1; }
+        html.dark .threat-row { border-color: rgba(255,255,255,0.08) !important; }
+        html.dark .threat-key { color: #94a3b8 !important; }
+        html.dark .threat-val { color: #e8edf5 !important; }
+
+        /* File Scanner */
+        .scan-drop-zone { border: 2px dashed var(--card-border); border-radius: 10px; padding: 24px 16px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; }
+        .scan-drop-zone:hover, .scan-drop-zone.drag-over { border-color: var(--accent); background: rgba(74,108,247,.06); }
+        .scan-drop-icon { font-size: 28px; margin-bottom: 6px; }
+        .scan-drop-text { font-size: 13px; font-weight: 600; color: var(--text); }
+        .scan-drop-sub  { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+        .scan-prog-bar  { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 5px; }
+        .scan-prog-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .25s; }
+        .scan-prog-lbl  { font-size: 11px; color: var(--text-secondary); }
+        .scan-file-row  { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; }
+        .scan-file-name { flex: 1; min-width: 0; font-size: 12px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .scan-file-size { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; }
+        .scan-file-hash { font-family: monospace; font-size: 10px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+        .scan-status    { font-size: 11px; font-weight: 700; flex-shrink: 0; }
+        .scan-status.clean   { color: #4ade80; }
+        .scan-status.mal     { color: #f87171; }
+        .scan-status.pending { color: var(--text-secondary); }
+        html.dark .scan-drop-zone  { border-color: rgba(255,255,255,0.15) !important; }
+        html.dark .scan-file-row   { background: #111827 !important; border-color: rgba(255,255,255,0.08) !important; }
+        html.dark .scan-file-name  { color: #e8edf5 !important; }
+        html.dark .scan-prog-bar   { background: rgba(255,255,255,0.1) !important; }
+
+        /* String Extractor */
+        .ext-group { margin-bottom: 12px; }
+        .ext-group-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .ext-count { background: var(--accent); color: #fff; font-size: 10px; padding: 1px 7px; border-radius: 10px; font-weight: 700; }
+        .ext-items { display: flex; flex-direction: column; gap: 4px; }
+        .ext-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
+        .ext-val { flex: 1; font-family: monospace; font-size: 12px; color: var(--text); word-break: break-all; }
+    </style>
+</head>
+<body>
+
+<div class="tools-page">
+    <div class="tools-header">
+        <a class="tools-back" href="chat.html" title="Back to chat">&#8592;</a>
+        <span class="tools-title">Security Tools</span>
+    </div>
+
+    <div class="tool-tabs">
+        <button class="tool-tab active" data-tab="hash"    onclick="switchTab('hash',this)">🔍 Hash ID</button>
+        <button class="tool-tab"        data-tab="encoder" onclick="switchTab('encoder',this)">⇄ Encoder</button>
+        <button class="tool-tab"        data-tab="jwt"     onclick="switchTab('jwt',this)">🔑 JWT</button>
+        <button class="tool-tab"        data-tab="cipher"  onclick="switchTab('cipher',this)">🔐 Cipher</button>
+        <button class="tool-tab"        data-tab="regex"   onclick="switchTab('regex',this)">✦ Regex</button>
+        <button class="tool-tab"        data-tab="headers" onclick="switchTab('headers',this)">🛡 Headers</button>
+        <button class="tool-tab"        data-tab="strings" onclick="switchTab('strings',this)">🔎 Strings</button>
+        <button class="tool-tab"        data-tab="dns"     onclick="switchTab('dns',this)">🌐 DNS</button>
+        <button class="tool-tab"        data-tab="whois"   onclick="switchTab('whois',this)">📋 WHOIS</button>
+        <button class="tool-tab"        data-tab="cve"     onclick="switchTab('cve',this)">🐛 CVE</button>
+        <button class="tool-tab"        data-tab="ip"      onclick="switchTab('ip',this)">🌍 IP Lookup</button>
+        <button class="tool-tab"        data-tab="subdomains" onclick="switchTab('subdomains',this)">🔭 Subdomains</button>
+        <button class="tool-tab"        data-tab="password" onclick="switchTab('password',this)">🔒 Password</button>
+        <button class="tool-tab"        data-tab="baseconv" onclick="switchTab('baseconv',this)">⬡ Base Conv</button>
+        <button class="tool-tab"        data-tab="threatintel" onclick="switchTab('threatintel',this)">☣ Threat Intel</button>
+    </div>
+
+    <!-- ══ HASH IDENTIFIER ══ -->
+    <div class="tool-panel active" id="panel-hash">
+        <div class="tool-card">
+            <div class="tool-label">Paste hash</div>
+            <textarea class="tool-input" id="hashInput" rows="3"
+                placeholder="5f4dcc3b5aa765d61d8327deb882cf99" oninput="identifyHash()"></textarea>
+            <div class="btn-row">
+                <button class="tool-btn ask-ai-btn" onclick="askHashAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div id="hashResults"></div>
+    </div>
+
+    <!-- ══ ENCODER / DECODER ══ -->
+    <div class="tool-panel" id="panel-encoder">
+        <div class="tool-card">
+            <div class="sub-tabs">
+                <button class="sub-tab active" onclick="setEnc('base64',this)">Base64</button>
+                <button class="sub-tab" onclick="setEnc('hex',this)">Hex</button>
+                <button class="sub-tab" onclick="setEnc('url',this)">URL</button>
+                <button class="sub-tab" onclick="setEnc('rot13',this)">ROT13</button>
+                <button class="sub-tab" onclick="setEnc('binary',this)">Binary</button>
+                <button class="sub-tab" onclick="setEnc('xor',this)">XOR</button>
+            </div>
+            <div class="xor-row" id="xorRow" style="display:none;">
+                <div class="tool-label">XOR key (text or hex: 0x4B)</div>
+                <input class="short-input" id="xorKey" value="key" placeholder="key" style="width:160px;">
+            </div>
+            <div class="tool-label">Input</div>
+            <textarea class="tool-input" id="encInput" rows="4" placeholder="Text to encode or decode…"></textarea>
+            <div class="btn-row">
+                <button class="tool-btn" onclick="runEnc('encode')">Encode →</button>
+                <button class="tool-btn sec" onclick="runEnc('decode')">← Decode</button>
+                <button class="copy-btn" onclick="copyEl('encOutput')">Copy</button>
+                <button class="tool-btn ask-ai-btn" onclick="askEncAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div class="tool-card">
+            <div class="tool-label">Output</div>
+            <div class="tool-output" id="encOutput"></div>
+        </div>
+    </div>
+
+    <!-- ══ JWT DECODER ══ -->
+    <div class="tool-panel" id="panel-jwt">
+        <div class="tool-card">
+            <div class="tool-label">Paste JWT token</div>
+            <textarea class="tool-input" id="jwtInput" rows="4"
+                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature"
+                oninput="decodeJWT()"></textarea>
+            <div class="btn-row">
+                <button class="tool-btn ask-ai-btn" onclick="askJWTAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div id="jwtOut"></div>
+    </div>
+
+    <!-- ══ CIPHER TOOLS ══ -->
+    <div class="tool-panel" id="panel-cipher">
+        <div class="tool-card">
+            <div class="sub-tabs">
+                <button class="sub-tab active" onclick="setCipher('caesar',this)">Caesar</button>
+                <button class="sub-tab" onclick="setCipher('vigenere',this)">Vigenère</button>
+                <button class="sub-tab" onclick="setCipher('atbash',this)">Atbash</button>
+                <button class="sub-tab" onclick="setCipher('sub',this)">Substitution</button>
+            </div>
+
+            <div id="ctrl-caesar" class="cipher-ctrl">
+                <div>
+                    <div class="tool-label">Shift</div>
+                    <input class="short-input" id="caesarShift" type="number" min="1" max="25" value="13" style="width:70px;">
+                </div>
+                <button class="preset-btn" onclick="document.getElementById('caesarShift').value=13">ROT13</button>
+            </div>
+            <div id="ctrl-vigenere" class="cipher-ctrl" style="display:none;">
+                <div>
+                    <div class="tool-label">Key</div>
+                    <input class="short-input" id="vigKey" placeholder="KEY" value="KEY" style="width:200px;">
+                </div>
+            </div>
+            <div id="ctrl-atbash" style="display:none;">
+                <p style="font-size:13px;color:var(--text-secondary);margin:0 0 12px;">Atbash maps A↔Z, B↔Y… no key needed. Encode = Decode.</p>
+            </div>
+            <div id="ctrl-sub" style="display:none;">
+                <div class="tool-label">Map each letter (A–Z) to a custom letter</div>
+                <div class="sub-grid" id="subGrid"></div>
+                <div class="btn-row" style="margin-bottom:12px;">
+                    <button class="preset-btn" onclick="resetSub()">Reset</button>
+                    <button class="preset-btn" onclick="randomSub()">Randomize</button>
+                </div>
+            </div>
+
+            <div class="tool-label">Input text</div>
+            <textarea class="tool-input" id="cipherIn" rows="4" placeholder="Enter text…"></textarea>
+            <div class="btn-row">
+                <button class="tool-btn" onclick="runCipher('enc')">Encrypt →</button>
+                <button class="tool-btn sec" onclick="runCipher('dec')">← Decrypt</button>
+                <button class="copy-btn" onclick="copyEl('cipherOut')">Copy</button>
+                <button class="tool-btn ask-ai-btn" onclick="askCipherAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div class="tool-card">
+            <div class="tool-label">Output</div>
+            <div class="tool-output" id="cipherOut"></div>
+        </div>
+    </div>
+
+    <!-- ══ REGEX TESTER ══ -->
+    <div class="tool-panel" id="panel-regex">
+        <div class="tool-card">
+            <div class="tool-label">Pattern &amp; flags</div>
+            <div class="pat-row">
+                <input class="tool-input pat-input" id="rxPat" placeholder="[a-z]+" oninput="runRx()">
+                <input class="tool-input flag-input" id="rxFlags" value="gi" oninput="runRx()">
+            </div>
+            <div class="tool-label" style="margin-top:12px;">Presets</div>
+            <div class="preset-row">
+                <button class="preset-btn" onclick="setRxPreset('email')">Email</button>
+                <button class="preset-btn" onclick="setRxPreset('ip')">IP</button>
+                <button class="preset-btn" onclick="setRxPreset('url')">URL</button>
+                <button class="preset-btn" onclick="setRxPreset('sqli')">SQLi</button>
+                <button class="preset-btn" onclick="setRxPreset('xss')">XSS</button>
+                <button class="preset-btn" onclick="setRxPreset('jwt')">JWT</button>
+                <button class="preset-btn" onclick="setRxPreset('hash')">Hash</button>
+                <button class="preset-btn" onclick="setRxPreset('ipv6')">IPv6</button>
+                <button class="preset-btn" onclick="setRxPreset('mac')">MAC</button>
+                <button class="preset-btn" onclick="setRxPreset('b64')">Base64</button>
+            </div>
+        </div>
+        <div class="tool-card">
+            <div class="tool-label">Test string</div>
+            <textarea class="tool-input" id="rxInput" rows="5" placeholder="Paste text to test…" oninput="runRx()"></textarea>
+            <div class="match-count" id="rxCount"></div>
+            <div class="btn-row" style="margin-top:8px;">
+                <button class="tool-btn ask-ai-btn" onclick="askRxAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div class="tool-card">
+            <div class="tool-label">Highlighted matches</div>
+            <div class="regex-view" id="rxOut"></div>
+        </div>
+    </div>
+
+    <!-- ══ HTTP HEADER ANALYZER ══ -->
+    <div class="tool-panel" id="panel-headers">
+        <div class="tool-card">
+            <div class="tool-label">Paste raw HTTP response headers</div>
+            <textarea class="tool-input" id="hdrInput" rows="8"
+                placeholder="HTTP/1.1 200 OK&#10;Content-Type: text/html&#10;Strict-Transport-Security: max-age=31536000&#10;..."></textarea>
+            <div class="btn-row">
+                <button class="tool-btn" onclick="runHeaders()">Analyze →</button>
+                <button class="tool-btn sec" onclick="document.getElementById('hdrInput').value='';document.getElementById('hdrOut').innerHTML=''">Clear</button>
+                <button class="tool-btn ask-ai-btn" onclick="askHeadersAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div id="hdrOut"></div>
+    </div>
+
+    <!-- ══ STRING EXTRACTOR ══ -->
+    <div class="tool-panel" id="panel-strings">
+        <div class="tool-card">
+            <div class="tool-label">Paste any text or binary dump</div>
+            <textarea class="tool-input" id="strInput" rows="8"
+                placeholder="Paste logs, responses, binary strings, malware output…"></textarea>
+            <div class="btn-row">
+                <button class="tool-btn" onclick="runStrings()">Extract →</button>
+                <button class="tool-btn sec" onclick="document.getElementById('strInput').value='';document.getElementById('strOut').innerHTML=''">Clear</button>
+                <button class="tool-btn ask-ai-btn" onclick="askStringsAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div id="strOut"></div>
+    </div>
+
+    <!-- ══ DNS LOOKUP ══ -->
+    <div class="tool-panel" id="panel-dns">
+        <div class="tool-card">
+            <div class="tool-label">Domain name</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input class="tool-input" id="dnsInput" type="text" placeholder="example.com"
+                    style="flex:1;min-width:120px;" onkeydown="if(event.key==='Enter')runDNS()">
+                <select class="short-input" id="dnsType" style="height:38px;padding:0 8px;">
+                    <option>A</option><option>AAAA</option><option>MX</option>
+                    <option>TXT</option><option>CNAME</option><option>NS</option><option>SOA</option>
+                </select>
+            </div>
+            <div class="btn-row">
+                <button class="tool-btn" onclick="runDNS()">Lookup →</button>
+                <button class="tool-btn sec" onclick="document.getElementById('dnsInput').value='';document.getElementById('dnsOut').innerHTML=''">Clear</button>
+                <button class="tool-btn ask-ai-btn" onclick="askDnsAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div id="dnsOut"></div>
+    </div>
+
+    <!-- ══ WHOIS / RDAP ══ -->
+    <div class="tool-panel" id="panel-whois">
+        <div class="tool-card">
+            <div class="tool-label">Domain or IP address</div>
+            <input class="tool-input" id="whoisInput" type="text" placeholder="example.com or 1.1.1.1"
+                onkeydown="if(event.key==='Enter')runWHOIS()">
+            <div class="btn-row">
+                <button class="tool-btn" onclick="runWHOIS()">Lookup →</button>
+                <button class="tool-btn sec" onclick="document.getElementById('whoisInput').value='';document.getElementById('whoisOut').innerHTML=''">Clear</button>
+                <button class="tool-btn ask-ai-btn" onclick="askWhoisAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div id="whoisOut"></div>
+    </div>
+
+    <!-- ══ CVE LOOKUP ══ -->
+    <div class="tool-panel" id="panel-cve">
+        <div class="tool-card">
+            <div class="tool-label">CVE ID</div>
+            <input class="tool-input" id="cveInput" type="text" placeholder="CVE-2021-44228"
+                onkeydown="if(event.key==='Enter')runCVE()">
+            <div class="btn-row">
+                <button class="tool-btn" onclick="runCVE()">Lookup →</button>
+                <button class="tool-btn sec" onclick="document.getElementById('cveInput').value='';document.getElementById('cveOut').innerHTML=''">Clear</button>
+                <button class="tool-btn ask-ai-btn" onclick="askCveAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div id="cveOut"></div>
+    </div>
+
+    <!-- ══ IP LOOKUP ══ -->
+    <div class="tool-panel" id="panel-ip">
+        <div class="tool-card">
+            <div class="tool-label">IP Address (leave blank for your own IP)</div>
+            <input class="tool-input" id="ipInput" type="text" placeholder="1.1.1.1 or leave blank"
+                onkeydown="if(event.key==='Enter')runIP()">
+            <div class="btn-row">
+                <button class="tool-btn" onclick="runIP()">Lookup →</button>
+                <button class="tool-btn sec" onclick="document.getElementById('ipInput').value='';document.getElementById('ipOut').innerHTML=''">Clear</button>
+                <button class="tool-btn ask-ai-btn" onclick="askIpAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div id="ipOut"></div>
+    </div>
+
+    <!-- ══ SUBDOMAIN FINDER ══ -->
+    <div class="tool-panel" id="panel-subdomains">
+        <div class="tool-card">
+            <div class="tool-label">Domain (searches certificate transparency logs)</div>
+            <input class="tool-input" id="subInput" type="text" placeholder="example.com"
+                onkeydown="if(event.key==='Enter')runSubs()">
+            <div class="btn-row">
+                <button class="tool-btn" onclick="runSubs()">Search →</button>
+                <button class="tool-btn sec" onclick="document.getElementById('subInput').value='';document.getElementById('subOut').innerHTML=''">Clear</button>
+                <button class="tool-btn ask-ai-btn" onclick="askSubsAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div id="subOut"></div>
+    </div>
+
+    <!-- ══ PASSWORD ANALYZER ══ -->
+    <div class="tool-panel" id="panel-password">
+        <div class="tool-card">
+            <div class="tool-label">Password</div>
+            <div class="pw-input-wrap">
+                <input class="tool-input" id="pwInput" type="password" placeholder="Enter a password to analyze…"
+                    oninput="analyzePassword()" style="padding-right:36px;">
+                <button class="pw-toggle" onclick="var f=document.getElementById('pwInput');f.type=f.type==='password'?'text':'password';this.textContent=f.type==='password'?'👁':'🙈'">👁</button>
+            </div>
+            <div class="btn-row">
+                <button class="tool-btn ask-ai-btn" onclick="askPasswordAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div id="pwOut"></div>
+    </div>
+
+    <!-- ══ NUMBER BASE CONVERTER ══ -->
+    <div class="tool-panel" id="panel-baseconv">
+        <div class="tool-card">
+            <div class="tool-label">Value &amp; source base</div>
+            <div class="base-row">
+                <input class="tool-input" id="baseInput" type="text" placeholder="255 or FF or 11111111"
+                    style="flex:1;min-width:100px;" oninput="runBaseConv()" onkeydown="if(event.key==='Enter')runBaseConv()">
+                <select class="short-input" id="fromBase" style="height:38px;padding:0 8px;" onchange="runBaseConv()">
+                    <option value="10">Dec (10)</option>
+                    <option value="16">Hex (16)</option>
+                    <option value="2">Bin (2)</option>
+                    <option value="8">Oct (8)</option>
+                </select>
+            </div>
+            <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;color:var(--text-secondary)">Custom base:</span>
+                <input class="short-input" id="customBase" type="number" min="2" max="36" value="32"
+                    style="width:64px;" oninput="runBaseConv()">
+            </div>
+            <div class="btn-row">
+                <button class="tool-btn ask-ai-btn" onclick="askBaseAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div id="baseOut"></div>
+    </div>
+
+    <!-- ══ THREAT INTEL ══ -->
+    <div class="tool-panel" id="panel-threatintel">
+        <div class="tool-card">
+            <div class="tool-label">Hash Lookup (MD5 / SHA-1 / SHA-256) — MalwareBazaar</div>
+            <input class="tool-input" id="threatHashInput" type="text" placeholder="e.g. 5f4dcc3b5aa765d61d8327deb882cf99"
+                onkeydown="if(event.key==='Enter')runHashCheck()">
+            <div class="btn-row">
+                <button class="tool-btn" onclick="runHashCheck()">Check Hash →</button>
+                <button class="tool-btn sec" onclick="document.getElementById('threatHashInput').value='';document.getElementById('threatHashOut').innerHTML=''">Clear</button>
+            </div>
+        </div>
+        <div id="threatHashOut"></div>
+
+        <div class="tool-card" style="margin-top:14px;">
+            <div class="tool-label">URL / Domain Check — URLhaus</div>
+            <input class="tool-input" id="threatURLInput" type="text" placeholder="e.g. http://malicious.example.com/payload"
+                onkeydown="if(event.key==='Enter')runURLCheck()">
+            <div class="btn-row">
+                <button class="tool-btn" onclick="runURLCheck()">Check URL →</button>
+                <button class="tool-btn sec" onclick="document.getElementById('threatURLInput').value='';document.getElementById('threatURLOut').innerHTML=''">Clear</button>
+                <button class="tool-btn ask-ai-btn" onclick="askThreatAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div id="threatURLOut"></div>
+
+        <div class="tool-card" style="margin-top:14px;">
+            <div class="tool-label">File Scanner — select files to hash &amp; check against MalwareBazaar</div>
+            <div class="scan-drop-zone" id="scanDropZone" onclick="document.getElementById('scanFileInput').click()">
+                <div class="scan-drop-icon">📂</div>
+                <div class="scan-drop-text">Click to select files, or drag &amp; drop here</div>
+                <div class="scan-drop-sub">SHA-256 is computed locally — only the hash is sent, never the file</div>
+            </div>
+            <input type="file" id="scanFileInput" multiple style="display:none" onchange="startScan(this.files)">
+            <div class="btn-row" style="margin-top:10px;">
+                <button class="tool-btn sec" onclick="clearScan()">Clear Results</button>
+                <button class="tool-btn ask-ai-btn" onclick="askScanAI(this)">🤖 Ask AI</button>
+            </div>
+        </div>
+        <div id="scanProgress" style="display:none;margin-top:8px;">
+            <div class="scan-prog-bar"><div class="scan-prog-fill" id="scanProgFill"></div></div>
+            <div class="scan-prog-lbl" id="scanProgLbl"></div>
+        </div>
+        <div id="scanResults"></div>
+    </div>
+</div>
+
+<script>
+// dark class applied in <head> before paint
+
+// ── Tab ──
+function switchTab(name, btn) {
+    document.querySelectorAll('.tool-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tool-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+}
+// ── DNS Lookup ──
+async function runDNS() {
+    const domain = document.getElementById('dnsInput').value.trim();
+    const type   = document.getElementById('dnsType').value;
+    const out    = document.getElementById('dnsOut');
+    if (!domain) return;
+    out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Looking up…</div>';
+    try {
+        const r = await fetch('https://cloudflare-dns.com/dns-query?name=' + encodeURIComponent(domain) + '&type=' + type, {
+            headers: { 'Accept': 'application/dns-json' }
+        });
+        const d = await r.json();
+        const answers = (d.Answer || d.Authority || []);
+        if (d.Status !== 0 || !answers.length) {
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">No records found (NXDOMAIN or empty response).</div>';
+            return;
+        }
+        const TYPE_MAP = {1:'A',2:'NS',5:'CNAME',6:'SOA',15:'MX',16:'TXT',28:'AAAA',33:'SRV',99:'SPF',257:'CAA'};
+        let html = '<div class="tool-card"><table class="dns-table"><thead><tr><th>Type</th><th>TTL</th><th>Value</th></tr></thead><tbody>';
+        answers.forEach(function(rec) {
+            html += '<tr><td>' + (TYPE_MAP[rec.type] || rec.type) + '</td><td>' + rec.TTL + 's</td><td>' + esc(rec.data) + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        out.innerHTML = html;
+    } catch(e) {
+        out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">Request failed: ' + esc(e.message) + '</div>';
+    }
+}
+function askDnsAI(btn) {
+    const domain = document.getElementById('dnsInput').value.trim();
+    const type   = document.getElementById('dnsType').value;
+    const out    = document.getElementById('dnsOut').innerText.trim();
+    if (!domain) return;
+    let msg = 'DNS Lookup\nDomain: ' + domain + '\nRecord type: ' + type;
+    if (out) msg += '\n\nResults:\n' + out;
+    msg += '\n\nCan you analyze these DNS records and flag anything suspicious or noteworthy?';
+    sendToAI(msg, btn);
+}
+
+// ── WHOIS / RDAP ──
+async function runWHOIS() {
+    const target = document.getElementById('whoisInput').value.trim();
+    const out    = document.getElementById('whoisOut');
+    if (!target) return;
+    out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Looking up…</div>';
+    const isIP = /^(\d{1,3}\.){3}\d{1,3}$|^[0-9a-f:]+:[0-9a-f:]+$/i.test(target);
+    const url  = 'https://rdap.org/' + (isIP ? 'ip/' : 'domain/') + encodeURIComponent(target);
+    try {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const d = await r.json();
+        const rows = [];
+        if (d.ldhName)   rows.push(['Domain', d.ldhName]);
+        else if (d.startAddress) rows.push(['IP Range', d.startAddress + ' – ' + d.endAddress]);
+        if (d.status && d.status.length) rows.push(['Status', d.status.join(', ')]);
+        (d.events || []).forEach(function(ev) {
+            rows.push([ev.eventAction.charAt(0).toUpperCase() + ev.eventAction.slice(1),
+                new Date(ev.eventDate).toLocaleDateString()]);
+        });
+        if (d.nameservers && d.nameservers.length)
+            rows.push(['Name Servers', d.nameservers.map(function(ns){ return ns.ldhName; }).join(', ')]);
+        (d.entities || []).forEach(function(ent) {
+            if (ent.roles && ent.vcardArray) {
+                const role = ent.roles[0].charAt(0).toUpperCase() + ent.roles[0].slice(1);
+                (ent.vcardArray[1] || []).forEach(function(f) {
+                    if (f[0] === 'fn' && f[3]) rows.push([role, f[3]]);
+                });
+            }
+        });
+        if (!rows.length) {
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">No data returned.</div>';
+            return;
+        }
+        let html = '<div class="tool-card">';
+        rows.forEach(function(row) {
+            html += '<div class="whois-row"><span class="whois-key">' + row[0] + '</span><span class="whois-val">' + esc(String(row[1])) + '</span></div>';
+        });
+        html += '</div>';
+        out.innerHTML = html;
+    } catch(e) {
+        out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">Request failed: ' + esc(e.message) + '</div>';
+    }
+}
+function askWhoisAI(btn) {
+    const target = document.getElementById('whoisInput').value.trim();
+    const out    = document.getElementById('whoisOut').innerText.trim();
+    if (!target) return;
+    let msg = 'WHOIS/RDAP Lookup\nTarget: ' + target;
+    if (out) msg += '\n\nResults:\n' + out;
+    msg += '\n\nCan you analyze this registration data and flag anything suspicious or of interest?';
+    sendToAI(msg, btn);
+}
+
+// ── CVE Lookup ──
+async function runCVE() {
+    let id  = document.getElementById('cveInput').value.trim().toUpperCase();
+    const out = document.getElementById('cveOut');
+    if (!id) return;
+    if (!id.startsWith('CVE-')) id = 'CVE-' + id;
+    out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Looking up…</div>';
+    try {
+        const r = await fetch('https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=' + id);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const d = await r.json();
+        if (!d.vulnerabilities || !d.vulnerabilities.length) {
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">CVE not found.</div>';
+            return;
+        }
+        const cve  = d.vulnerabilities[0].cve;
+        const desc = (cve.descriptions || []).find(function(x){ return x.lang === 'en'; });
+        const m    = cve.metrics || {};
+        const vArr = m.cvssMetricV31 || m.cvssMetricV30 || m.cvssMetricV2 || [];
+        let score = null, severity = null;
+        if (vArr.length) {
+            const cd = vArr[0].cvssData;
+            score    = cd.baseScore;
+            severity = cd.baseSeverity || vArr[0].baseSeverity;
+        }
+        const sevCls = severity ? ({'CRITICAL':'sev-critical','HIGH':'sev-high','MEDIUM':'sev-medium','LOW':'sev-low'}[severity] || 'sev-none') : 'sev-none';
+        const pub = cve.published ? new Date(cve.published).toLocaleDateString() : '—';
+        const refs = (cve.references || []).slice(0, 6);
+        let html = '<div class="tool-card">';
+        html += '<div style="font-weight:700;font-size:15px;margin-bottom:10px;">' + cve.id + '</div>';
+        if (score !== null) {
+            html += '<div class="cve-score ' + sevCls + '">' +
+                '<div class="cve-score-num">' + score + '</div>' +
+                '<div><div class="cve-score-sev">' + (severity || '—') + '</div><div class="cve-score-sub">CVSS Base Score</div></div>' +
+                '</div>';
+        }
+        html += '<div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;">Published: ' + pub + '</div>';
+        if (desc) html += '<div class="cve-desc">' + esc(desc.value) + '</div>';
+        if (refs.length) {
+            html += '<div class="tool-label">References</div>';
+            refs.forEach(function(ref) {
+                var safeUrl = /^https?:\/\//i.test(ref.url) ? ref.url : '#';
+                html += '<a class="cve-ref" href="' + esc(safeUrl) + '" target="_blank" rel="noopener noreferrer">' + esc(ref.url) + '</a>';
+            });
+        }
+        html += '</div>';
+        out.innerHTML = html;
+    } catch(e) {
+        out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">Request failed: ' + esc(e.message) + '</div>';
+    }
+}
+function askCveAI(btn) {
+    const id  = document.getElementById('cveInput').value.trim();
+    const out = document.getElementById('cveOut').innerText.trim();
+    if (!id) return;
+    let msg = 'CVE Lookup: ' + id;
+    if (out) msg += '\n\nDetails:\n' + out;
+    msg += '\n\nCan you explain this vulnerability, its real-world impact, and how to detect or mitigate it?';
+    sendToAI(msg, btn);
+}
+
+// ── IP Lookup ──
+async function runIP() {
+    const ip  = document.getElementById('ipInput').value.trim();
+    const out = document.getElementById('ipOut');
+    out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Looking up…</div>';
+    try {
+        const url = 'https://ip-api.com/json/' + (ip || '') + '?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,isp,org,as,query';
+        const r = await fetch(url);
+        const d = await r.json();
+        if (d.status !== 'success') {
+            out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">' + esc(d.message || 'Lookup failed') + '</div>';
+            return;
+        }
+        const rows = [
+            ['IP', d.query], ['Country', d.country + ' (' + d.countryCode + ')'],
+            ['Region', d.regionName], ['City', d.city], ['ZIP', d.zip],
+            ['Coordinates', d.lat + ', ' + d.lon], ['ISP', d.isp],
+            ['Organization', d.org], ['ASN', d.as],
+        ].filter(function(r) { return r[1] && r[1].trim() && r[1].trim() !== ',' && r[1].trim() !== 'undefined'; });
+        let html = '<div class="tool-card">';
+        rows.forEach(function(row) {
+            html += '<div class="whois-row"><span class="whois-key">' + row[0] + '</span><span class="whois-val">' + esc(String(row[1])) + '</span></div>';
+        });
+        html += '</div>';
+        out.innerHTML = html;
+    } catch(e) {
+        out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">Request failed: ' + esc(e.message) + '</div>';
+    }
+}
+function askIpAI(btn) {
+    const ip  = document.getElementById('ipInput').value.trim() || 'my IP';
+    const out = document.getElementById('ipOut').innerText.trim();
+    let msg = 'IP Lookup\nTarget: ' + ip;
+    if (out) msg += '\n\nResults:\n' + out;
+    msg += '\n\nCan you analyze this IP — is the ASN/org notable, any threat intel, what does this tell us?';
+    sendToAI(msg, btn);
+}
+
+// ── Subdomain Finder ──
+async function runSubs() {
+    const domain = document.getElementById('subInput').value.trim();
+    const out    = document.getElementById('subOut');
+    if (!domain) return;
+    out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Searching certificate transparency logs…</div>';
+    try {
+        const r = await fetch('https://crt.sh/?q=%25.' + encodeURIComponent(domain) + '&output=json');
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = await r.json();
+        const seen = new Set();
+        data.forEach(function(entry) {
+            (entry.name_value || '').split('\n').forEach(function(name) {
+                name = name.trim().toLowerCase().replace(/^\*\./, '');
+                if (name && name.endsWith(domain.toLowerCase())) seen.add(name);
+            });
+        });
+        const subs = Array.from(seen).sort();
+        if (!subs.length) {
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">No subdomains found in CT logs.</div>';
+            return;
+        }
+        let html = '<div class="tool-card"><div class="ext-group-label">Found <span class="ext-count">' + subs.length + '</span></div><div class="ext-items">';
+        subs.forEach(function(s) {
+            html += '<div class="ext-item"><span class="ext-val">' + esc(s) + '</span><button class="copy-btn" onclick="navigator.clipboard.writeText(' + JSON.stringify(s) + ')">Copy</button></div>';
+        });
+        html += '</div></div>';
+        out.innerHTML = html;
+    } catch(e) {
+        out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">Request failed: ' + esc(e.message) + '</div>';
+    }
+}
+function askSubsAI(btn) {
+    const domain = document.getElementById('subInput').value.trim();
+    const out    = document.getElementById('subOut').innerText.trim();
+    if (!domain) return;
+    let msg = 'Subdomain Finder\nDomain: ' + domain;
+    if (out) msg += '\n\nSubdomains found:\n' + out;
+    msg += '\n\nCan you analyze these subdomains — flag staging envs, admin panels, legacy systems, or interesting attack surface?';
+    sendToAI(msg, btn);
+}
+
+// ── Password Analyzer ──
+function analyzePassword() {
+    const pw  = document.getElementById('pwInput').value;
+    const out = document.getElementById('pwOut');
+    if (!pw) { out.innerHTML = ''; return; }
+    let charset = 0;
+    if (/[a-z]/.test(pw)) charset += 26;
+    if (/[A-Z]/.test(pw)) charset += 26;
+    if (/[0-9]/.test(pw)) charset += 10;
+    if (/[^a-zA-Z0-9]/.test(pw)) charset += 32;
+    const entropy = pw.length * Math.log2(charset || 1);
+    let strength, color, pct;
+    if      (entropy < 28) { strength='Very Weak';    color='#f87171'; pct=8;  }
+    else if (entropy < 40) { strength='Weak';         color='#fb923c'; pct=25; }
+    else if (entropy < 60) { strength='Fair';         color='#fbbf24'; pct=50; }
+    else if (entropy < 80) { strength='Strong';       color='#4ade80'; pct=75; }
+    else                   { strength='Very Strong';  color='#34d399'; pct=100;}
+    const total = Math.pow(2, entropy);
+    function fmtTime(s) {
+        if (s < 1) return 'instant';
+        if (s < 60) return Math.round(s) + 's';
+        if (s < 3600) return Math.round(s/60) + ' min';
+        if (s < 86400) return Math.round(s/3600) + ' hrs';
+        if (s < 31536000) return Math.round(s/86400) + ' days';
+        if (s < 31536000*1000) return Math.round(s/31536000) + ' yrs';
+        return '> 1000 years';
+    }
+    const rates = [['Online (throttled)', 100], ['Online (fast)', 10000], ['Offline MD5', 1e10], ['Offline bcrypt', 1e4], ['GPU cluster', 1e13]];
+    const warnings = [];
+    if (/^[a-zA-Z]+$/.test(pw)) warnings.push('Letters only — add numbers or symbols');
+    if (/^[0-9]+$/.test(pw))    warnings.push('Numbers only — very easy to brute force');
+    if (/(.)\1{2,}/.test(pw))   warnings.push('Repeated characters detected');
+    if (/^(password|qwerty|abc|123|admin|letmein|welcome)/i.test(pw)) warnings.push('Common password pattern');
+    if (pw.length < 8)  warnings.push('Too short — use at least 12 characters');
+    else if (pw.length < 12) warnings.push('Consider using 12+ characters');
+    let html = '<div class="tool-card">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><span style="font-weight:700;font-size:15px;color:'+color+'">'+strength+'</span><span style="font-size:12px;color:var(--text-secondary)">'+Math.round(entropy)+' bits</span></div>';
+    html += '<div class="pw-meter"><div class="pw-meter-fill" style="width:'+pct+'%;background:'+color+'"></div></div>';
+    html += '<div class="pw-stat-grid"><div class="pw-stat"><div class="pw-stat-num">'+pw.length+'</div><div class="pw-stat-lbl">Length</div></div><div class="pw-stat"><div class="pw-stat-num">'+charset+'</div><div class="pw-stat-lbl">Charset</div></div></div>';
+    html += '<div class="tool-label">Crack Time Estimates</div>';
+    rates.forEach(function(rate) {
+        html += '<div class="pw-crack-row"><span style="font-size:12px;color:var(--text-secondary)">'+rate[0]+'</span><span style="font-size:12px;font-weight:600;font-family:monospace;">'+fmtTime(total/rate[1]/2)+'</span></div>';
+    });
+    if (warnings.length) {
+        html += '<div class="tool-label" style="margin-top:10px;">Suggestions</div>';
+        warnings.forEach(function(w) { html += '<div class="pw-warn">⚠ '+w+'</div>'; });
+    }
+    html += '</div>';
+    out.innerHTML = html;
+}
+
+// ── Number Base Converter ──
+function runBaseConv() {
+    const val  = document.getElementById('baseInput').value.trim();
+    const from = parseInt(document.getElementById('fromBase').value);
+    const out  = document.getElementById('baseOut');
+    if (!val) { out.innerHTML = ''; return; }
+    try {
+        const num = parseInt(val.replace(/\s/g,''), from);
+        if (isNaN(num)) throw new Error('Invalid value for base ' + from);
+        const custom = parseInt(document.getElementById('customBase').value);
+        const rows = [['Binary (2)', num.toString(2)], ['Octal (8)', num.toString(8)], ['Decimal (10)', num.toString(10)], ['Hex (16)', num.toString(16).toUpperCase()]];
+        if (custom >= 2 && custom <= 36 && ![2,8,10,16].includes(custom)) rows.push(['Base ' + custom, num.toString(custom).toUpperCase()]);
+        let html = '<div class="tool-card">';
+        rows.forEach(function(row) {
+            html += '<div class="base-result-row"><span class="base-result-lbl">'+row[0]+'</span><span class="base-result-val">'+row[1]+'</span><button class="copy-btn" style="flex-shrink:0;" onclick="navigator.clipboard.writeText(\''+row[1]+'\')">Copy</button></div>';
+        });
+        html += '</div>';
+        out.innerHTML = html;
+    } catch(e) {
+        out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">'+esc(e.message)+'</div>';
+    }
+}
+
+function askPasswordAI(btn) {
+    const pw  = document.getElementById('pwInput').value;
+    const out = document.getElementById('pwOut').innerText.trim();
+    if (!pw) return;
+    let msg = 'Password Analysis\nPassword length: ' + pw.length + ' characters';
+    if (out) msg += '\n\nAnalysis results:\n' + out;
+    msg += '\n\nCan you give me advice on making this stronger and explain the risks at this strength level?';
+    sendToAI(msg, btn);
+}
+
+function askBaseAI(btn) {
+    const val  = document.getElementById('baseInput').value.trim();
+    const from = document.getElementById('fromBase').value;
+    const out  = document.getElementById('baseOut').innerText.trim();
+    if (!val) return;
+    let msg = 'Number Base Conversion\nInput: ' + val + ' (base ' + from + ')';
+    if (out) msg += '\n\nConversions:\n' + out;
+    msg += '\n\nCan you explain what this value represents and where these number bases are typically used in computing or security?';
+    sendToAI(msg, btn);
+}
+
+// Called by parent window to switch tabs without a click event
+window.switchToTab = function (name) {
+    var btn = document.querySelector('.tool-tab[data-tab="' + name + '"]');
+    if (btn) switchTab(name, btn);
+};
+function setSubTab(group, btn) {
+    btn.closest('.sub-tabs').querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+}
+
+// ══════════════════ HASH IDENTIFIER ══════════════════
+const HASHES = [
+    { name:'CRC32',       len:8,   hex:true,  conf:'low',    info:'32-bit checksum, not cryptographic' },
+    { name:'MySQL 3.23',  len:16,  hex:true,  conf:'medium', info:'Old MySQL password hash (deprecated)' },
+    { name:'Half MD5',    len:16,  hex:true,  conf:'low',    info:'Truncated MD5' },
+    { name:'MD5',         len:32,  hex:true,  conf:'high',   info:'128-bit — extremely common, broken' },
+    { name:'MD4',         len:32,  hex:true,  conf:'low',    info:'Predecessor to MD5, deprecated' },
+    { name:'NTLM',        len:32,  hex:true,  conf:'medium', info:'Windows NT LAN Manager password hash' },
+    { name:'SHA-1',       len:40,  hex:true,  conf:'high',   info:'160-bit — deprecated, broken' },
+    { name:'RIPEMD-160',  len:40,  hex:true,  conf:'low',    info:'Alternative 160-bit hash' },
+    { name:'MySQL 4.1+',  len:40,  hex:true,  conf:'medium', info:'MySQL SHA1-based double hash' },
+    { name:'SHA-224',     len:56,  hex:true,  conf:'high',   info:'SHA-2 family, 224-bit' },
+    { name:'SHA-256',     len:64,  hex:true,  conf:'high',   info:'SHA-2 — widely used, secure' },
+    { name:'SHA3-256',    len:64,  hex:true,  conf:'medium', info:'SHA-3 Keccak variant, 256-bit' },
+    { name:'Blake2-256',  len:64,  hex:true,  conf:'low',    info:'Fast modern hash, 256-bit' },
+    { name:'SHA-384',     len:96,  hex:true,  conf:'high',   info:'SHA-2 family, 384-bit' },
+    { name:'SHA-512',     len:128, hex:true,  conf:'high',   info:'SHA-2 family, 512-bit' },
+    { name:'Whirlpool',   len:128, hex:true,  conf:'low',    info:'512-bit Miyaguchi–Preneel hash' },
+    { name:'SHA3-512',    len:128, hex:true,  conf:'medium', info:'SHA-3 Keccak variant, 512-bit' },
+];
+
+function identifyHash() {
+    const v = document.getElementById('hashInput').value.trim();
+    const out = document.getElementById('hashResults');
+    if (!v) { out.innerHTML = ''; return; }
+    const res = [];
+
+    if (/^\$2[aby]\$\d{2}\$/.test(v)) res.push({name:'bcrypt',conf:'high',info:'Adaptive password hash — very secure'});
+    if (/^\$argon2(i|d|id)\$/.test(v)) res.push({name:'Argon2',conf:'high',info:'Memory-hard password hash (PHC winner 2015)'});
+    if (/^\$1\$/.test(v)) res.push({name:'MD5crypt',conf:'high',info:'Unix MD5-based crypt (deprecated)'});
+    if (/^\$5\$/.test(v)) res.push({name:'SHA256crypt',conf:'high',info:'Unix SHA-256 crypt'});
+    if (/^\$6\$/.test(v)) res.push({name:'SHA512crypt',conf:'high',info:'Unix SHA-512 crypt'});
+    if (/^\$pbkdf2/.test(v)) res.push({name:'PBKDF2',conf:'high',info:'Password-Based Key Derivation Function 2'});
+
+    if (/^[0-9a-fA-F]+$/.test(v)) HASHES.filter(h => h.hex && h.len === v.length).forEach(h => res.push(h));
+
+    if (/^[A-Za-z0-9+/=]+$/.test(v) && v.length % 4 === 0 && v.length > 10) {
+        // Raw binary hash bytes → Base64 (e.g. from openssl dgst -binary | base64)
+        const b64bin = {24:'MD5', 28:'SHA-1', 40:'SHA-224', 44:'SHA-256', 64:'SHA-384', 88:'SHA-512'};
+        // Hex-string hash → Base64 via btoa() — what the Encoder tool produces
+        const b64hex = {12:'CRC32', 44:'MD5', 56:'SHA-1', 76:'SHA-224', 88:'SHA-256', 128:'SHA-384', 172:'SHA-512'};
+        const seen = new Set();
+        if (b64bin[v.length]) {
+            const n = b64bin[v.length];
+            res.push({name: n + ' (Base64 — binary)', conf:'medium', info:'Raw hash bytes encoded as Base64'});
+            seen.add(n);
+        }
+        if (b64hex[v.length] && !seen.has(b64hex[v.length])) {
+            res.push({name: b64hex[v.length] + ' (Base64 — hex string)', conf:'medium', info:'Hex-encoded hash encoded as Base64 (e.g. from the Encoder tool)'});
+            seen.add(b64hex[v.length]);
+        }
+        if (!seen.size) {
+            try {
+                const decoded = atob(v);
+                const isText = /^[\x20-\x7E\t\n\r]+$/.test(decoded);
+                const preview = decoded.slice(0, 48) + (decoded.length > 48 ? '…' : '');
+                res.push({name:'Base64 encoded data', conf:'low',
+                    info: isText ? 'Decodes to: "' + preview + '"' : 'Decodes to ' + decoded.length + ' bytes of binary data (not a hash)'});
+            } catch(e) {
+                res.push({name:'Base64 encoded data', conf:'low', info:'Valid Base64 format — not a recognised hash length'});
+            }
+        }
+    }
+
+    if (!res.length) {
+        const isHex = /^[0-9a-fA-F]+$/.test(v);
+        const isB64 = /^[A-Za-z0-9+/=]+$/.test(v) && v.length % 4 === 0;
+        const isBin = /^[01 ]+$/.test(v.trim());
+        let hint = `Length: ${v.length} chars.`;
+        if (isBin && v.trim().split(/\s+/).every(b => /^[01]{8}$/.test(b)))
+            hint += ' Looks like binary encoding — decode it first, then paste the result here.';
+        else if (isHex)
+            hint += ' Valid hex, but no standard hash uses this length.';
+        else if (isB64)
+            hint += ' Valid Base64, but the length doesn\'t match any known hash encoding.';
+        else
+            hint += ' Contains non-hex, non-Base64 characters. If this was ROT13/XOR/binary-encoded, decode it first.';
+        out.innerHTML = `<div class="tool-card" style="color:var(--text-secondary);">No known hash type matched. ${hint}</div>`;
+        return;
+    }
+    out.innerHTML = `<div class="tool-card"><div class="tool-label">${res.length} possible type${res.length>1?'s':''}</div><div class="hash-list">${
+        res.map(r=>`<div class="hash-row"><span class="badge ${r.conf}">${r.conf}</span><div><div class="hash-name">${r.name}</div><div class="hash-detail">${r.info}</div></div></div>`).join('')
+    }</div></div>`;
+}
+
+// ══════════════════ ENCODER ══════════════════
+let curEnc = 'base64';
+function setEnc(t, btn) {
+    curEnc = t;
+    setSubTab('encoder', btn);
+    document.getElementById('xorRow').style.display = t==='xor' ? 'block' : 'none';
+    document.getElementById('encOutput').textContent = '';
+}
+function runEnc(dir) {
+    const s = document.getElementById('encInput').value;
+    let o = '';
+    try {
+        if (curEnc==='base64') o = dir==='encode' ? btoa(unescape(encodeURIComponent(s))) : decodeURIComponent(escape(atob(s)));
+        else if (curEnc==='hex') {
+            o = dir==='encode'
+                ? Array.from(s).map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join('')
+                : s.replace(/\s/g,'').match(/.{1,2}/g).map(b=>String.fromCharCode(parseInt(b,16))).join('');
+        }
+        else if (curEnc==='url') o = dir==='encode' ? encodeURIComponent(s) : decodeURIComponent(s);
+        else if (curEnc==='rot13') o = s.replace(/[a-zA-Z]/g,c=>{const b=c>='a'?97:65;return String.fromCharCode((c.charCodeAt(0)-b+13)%26+b);});
+        else if (curEnc==='binary') {
+            o = dir==='encode'
+                ? Array.from(s).map(c=>c.charCodeAt(0).toString(2).padStart(8,'0')).join(' ')
+                : s.trim().split(/\s+/).map(b=>String.fromCharCode(parseInt(b,2))).join('');
+        }
+        else if (curEnc==='xor') {
+            const kraw = document.getElementById('xorKey').value;
+            const key = /^0x[0-9a-fA-F]+$/i.test(kraw)
+                ? kraw.slice(2).match(/.{1,2}/g).map(b=>String.fromCharCode(parseInt(b,16)))
+                : kraw.split('');
+            const xored = Array.from(s).map((c,i)=>String.fromCharCode(c.charCodeAt(0)^key[i%key.length].charCodeAt(0))).join('');
+            o = dir==='encode' ? Array.from(xored).map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join('') : xored;
+        }
+    } catch(e) { o = 'Error: '+e.message; }
+    document.getElementById('encOutput').textContent = o;
+}
+
+// ══════════════════ JWT ══════════════════
+function b64url(s) {
+    s = s.replace(/-/g,'+').replace(/_/g,'/');
+    while(s.length%4) s+='=';
+    try { return JSON.parse(atob(s)); } catch { try { return atob(s); } catch { return s; } }
+}
+function decodeJWT() {
+    const raw = document.getElementById('jwtInput').value.trim();
+    const out = document.getElementById('jwtOut');
+    if (!raw) { out.innerHTML=''; return; }
+    const p = raw.split('.');
+    if (p.length!==3) { out.innerHTML=`<div class="tool-card" style="color:#f87171;">Not a valid JWT — expected 3 dot-separated parts, got ${p.length}.</div>`; return; }
+    const hdr = b64url(p[0]), pld = b64url(p[1]);
+    const now = Math.floor(Date.now()/1000);
+    let statusHtml = '';
+    if (pld && typeof pld==='object' && pld.exp) {
+        const expired = pld.exp < now;
+        statusHtml = `<span class="jwt-status ${expired?'jwt-exp':'jwt-ok'}">${expired?'✗ Expired':'✓ Valid'} — ${new Date(pld.exp*1000).toLocaleString()}</span>`;
+    }
+    out.innerHTML = `<div class="tool-card">${statusHtml?`<div style="margin-bottom:12px">${statusHtml}</div>`:''}
+    <div class="jwt-parts">
+        <div class="jwt-part"><div class="jwt-hdr c-blue">Header</div><div class="jwt-body">${esc(JSON.stringify(hdr,null,2))}</div></div>
+        <div class="jwt-part"><div class="jwt-hdr c-green">Payload</div><div class="jwt-body">${esc(JSON.stringify(pld,null,2))}</div></div>
+        <div class="jwt-part"><div class="jwt-hdr c-red">Signature (unverified)</div><div class="jwt-body">${esc(p[2])}</div></div>
+    </div></div>`;
+}
+
+// ══════════════════ CIPHER ══════════════════
+let curCipher = 'caesar';
+let subMap = {};
+
+function setCipher(t, btn) {
+    curCipher = t;
+    setSubTab('cipher', btn);
+    ['caesar','vigenere','atbash','sub'].forEach(id => {
+        document.getElementById('ctrl-'+id).style.display = id===t ? (id==='atbash'?'block':'flex') : 'none';
+    });
+    if (t==='sub') { document.getElementById('ctrl-sub').style.display='block'; buildSubGrid(); }
+    document.getElementById('cipherOut').textContent='';
+}
+
+function buildSubGrid() {
+    const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    document.getElementById('subGrid').innerHTML = alpha.map(c=>`
+        <div class="sub-cell">
+            <div class="sub-from">${c}</div>
+            <input class="sub-box" id="sb_${c}" maxlength="1" value="${subMap[c]||c}" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(-1)||'${c}'">
+        </div>`).join('');
+}
+function resetSub() { 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(c=>subMap[c]=c); buildSubGrid(); }
+function randomSub() {
+    const a='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''), s=[...a].sort(()=>Math.random()-.5);
+    a.forEach((c,i)=>subMap[c]=s[i]); buildSubGrid();
+}
+function getSubMap() {
+    const m={};
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(c=>m[c]=(document.getElementById('sb_'+c)?.value||c));
+    return m;
+}
+
+function caesarRun(t,sh,dec) {
+    if(dec) sh=(26-(sh%26+26)%26)%26;
+    return t.replace(/[a-zA-Z]/g,c=>{const b=c>='a'?97:65;return String.fromCharCode((c.charCodeAt(0)-b+sh+26)%26+b);});
+}
+function vigRun(t,key,dec) {
+    key=key.toUpperCase().replace(/[^A-Z]/g,''); if(!key) return t;
+    let ki=0;
+    return t.replace(/[a-zA-Z]/g,c=>{const b=c>='a'?97:65,sh=key[ki++%key.length].charCodeAt(0)-65,s=dec?(26-sh)%26:sh;return String.fromCharCode((c.charCodeAt(0)-b+s+26)%26+b);});
+}
+function atbashRun(t) { return t.replace(/[a-zA-Z]/g,c=>{const b=c>='a'?97:65;return String.fromCharCode(b+25-(c.charCodeAt(0)-b));}); }
+function subRun(t,dec) {
+    const m=getSubMap(), r={};
+    if(dec) Object.entries(m).forEach(([k,v])=>r[v]=k);
+    const use=dec?r:m;
+    return t.replace(/[a-zA-Z]/g,c=>{const u=c.toUpperCase(),mapped=use[u]||c;return c===u?mapped:mapped.toLowerCase();});
+}
+
+function runCipher(dir) {
+    const t=document.getElementById('cipherIn').value, dec=dir==='dec';
+    let o='';
+    if(curCipher==='caesar') o=caesarRun(t,parseInt(document.getElementById('caesarShift').value)||13,dec);
+    else if(curCipher==='vigenere') o=vigRun(t,document.getElementById('vigKey').value,dec);
+    else if(curCipher==='atbash') o=atbashRun(t);
+    else if(curCipher==='sub') o=subRun(t,dec);
+    document.getElementById('cipherOut').textContent=o;
+}
+
+// ══════════════════ REGEX ══════════════════
+const RX_PRESETS = {
+    email: { p:'[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}', f:'gi', ex:'user@example.com  admin@site.org  bad@' },
+    ip:    { p:'\\b(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\b', f:'g', ex:'192.168.1.1  10.0.0.1  999.999.0.1  127.0.0.1' },
+    url:   { p:'https?:\\/\\/[^\\s/$.?#].[^\\s]*', f:'gi', ex:'Visit https://example.com or http://sub.site.org/path?q=1' },
+    sqli:  { p:"(?:--|;|\\bOR\\b|\\bAND\\b|\\bUNION\\b|\\bSELECT\\b|\\bDROP\\b|\\bINSERT\\b|\\bDELETE\\b|\\bUPDATE\\b|\\bEXEC\\b|\\bxp_|0x[0-9a-f]+|\\bWAITFOR\\b)", f:'gi', ex:"' OR 1=1 --\nUNION SELECT * FROM users\nDROP TABLE users;" },
+    xss:   { p:'<script[^>]*>|javascript:|on\\w+\\s*=|<iframe|<img[^>]+onerror|alert\\s*\\(|document\\.cookie', f:'gi', ex:'<script>alert(1)<\/script>\n<img onerror="alert(1)">\njavascript:void(0)' },
+    jwt:   { p:'eyJ[A-Za-z0-9\\-_]+\\.eyJ[A-Za-z0-9\\-_]+\\.[A-Za-z0-9\\-_]+', f:'g', ex:'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.abc123' },
+    hash:  { p:'\\b[0-9a-fA-F]{32}\\b|\\b[0-9a-fA-F]{40}\\b|\\b[0-9a-fA-F]{64}\\b|\\b[0-9a-fA-F]{128}\\b', f:'g', ex:'5f4dcc3b5aa765d61d8327deb882cf99\nda39a3ee5e6b4b0d3255bfef95601890afd80709' },
+    ipv6:  { p:'(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|::(?:[0-9a-fA-F]{1,4}:)*[0-9a-fA-F]{0,4}', f:'gi', ex:'2001:0db8:85a3:0000:0000:8a2e:0370:7334\n::1' },
+    mac:   { p:'\\b(?:[0-9A-Fa-f]{2}[:\\-]){5}[0-9A-Fa-f]{2}\\b', f:'gi', ex:'AA:BB:CC:DD:EE:FF\n00-1A-2B-3C-4D-5E' },
+    b64:   { p:'(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?', f:'g', ex:'SGVsbG8gV29ybGQ=  dGVzdA==  bm90YmFzZTY0!' },
+};
+function setRxPreset(name) {
+    const p=RX_PRESETS[name];
+    document.getElementById('rxPat').value=p.p;
+    document.getElementById('rxFlags').value=p.f;
+    document.getElementById('rxInput').value=p.ex;
+    runRx();
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function runRx() {
+    const pat=document.getElementById('rxPat').value, flags=document.getElementById('rxFlags').value, input=document.getElementById('rxInput').value;
+    const outEl=document.getElementById('rxOut'), cntEl=document.getElementById('rxCount');
+    if(!pat||!input){outEl.innerHTML=esc(input);cntEl.textContent='';return;}
+    let rx;
+    try{rx=new RegExp(pat,flags.includes('g')?flags:flags+'g');}
+    catch(e){outEl.innerHTML=`<span style="color:#f87171">Bad regex: ${esc(e.message)}</span>`;cntEl.textContent='';return;}
+    const matches=[...input.matchAll(rx)];
+    cntEl.textContent=matches.length?`${matches.length} match${matches.length>1?'es':''}`:'No matches';
+    let html='',last=0;
+    for(const m of matches){html+=esc(input.slice(last,m.index));html+=`<mark class="hl">${esc(m[0])}</mark>`;last=m.index+m[0].length;}
+    html+=esc(input.slice(last));
+    outEl.innerHTML=html;
+}
+
+// ══════════════════ HTTP HEADER ANALYZER ══════════════════
+const SEC_HEADERS = [
+    { name:'strict-transport-security',   label:'Strict-Transport-Security (HSTS)', sev:'high',
+      info:'Forces HTTPS connections. Missing leaves users open to SSL stripping attacks.',
+      check: v => /max-age=\d+/i.test(v) },
+    { name:'content-security-policy',     label:'Content-Security-Policy', sev:'high',
+      info:'Prevents XSS and data injection. Absence allows arbitrary script execution.',
+      check: v => !!v },
+    { name:'x-frame-options',             label:'X-Frame-Options', sev:'medium',
+      info:'Prevents clickjacking via iframes. Use DENY or SAMEORIGIN.',
+      check: v => /DENY|SAMEORIGIN/i.test(v) },
+    { name:'x-content-type-options',      label:'X-Content-Type-Options', sev:'medium',
+      info:'Prevents MIME-sniffing attacks. Value should be "nosniff".',
+      check: v => v.trim().toLowerCase() === 'nosniff' },
+    { name:'referrer-policy',             label:'Referrer-Policy', sev:'medium',
+      info:'Controls Referer header leakage to third parties.',
+      check: v => !!v },
+    { name:'permissions-policy',          label:'Permissions-Policy', sev:'low',
+      info:'Restricts browser features (camera, mic, geolocation, etc.).',
+      check: v => !!v },
+    { name:'cross-origin-opener-policy',  label:'Cross-Origin-Opener-Policy', sev:'low',
+      info:'Isolates browsing context to prevent cross-origin attacks.',
+      check: v => !!v },
+    { name:'cross-origin-resource-policy',label:'Cross-Origin-Resource-Policy', sev:'low',
+      info:'Prevents other origins from loading your resources.',
+      check: v => !!v },
+    { name:'x-xss-protection',            label:'X-XSS-Protection', sev:'info',
+      info:'Legacy header, superseded by CSP. Set to "0" to disable the broken IE XSS filter.',
+      check: v => !!v },
+];
+const LEAKY = [
+    { name:'server',              label:'Server',               info:'Exposes server software and version.' },
+    { name:'x-powered-by',       label:'X-Powered-By',         info:'Reveals technology stack (PHP, ASP.NET…).' },
+    { name:'x-aspnet-version',   label:'X-AspNet-Version',     info:'Reveals .NET framework version.' },
+    { name:'x-aspnetmvc-version',label:'X-AspNetMvc-Version',  info:'Reveals ASP.NET MVC version.' },
+    { name:'x-generator',        label:'X-Generator',          info:'Reveals CMS or framework used.' },
+];
+
+function parseHeaders(raw) {
+    const map = new Map();
+    raw.split(/\r?\n/).forEach(line => {
+        const i = line.indexOf(':');
+        if (i < 1) return;
+        const k = line.slice(0, i).trim().toLowerCase();
+        const v = line.slice(i + 1).trim();
+        if (k) map.set(k, v);
+    });
+    return map;
+}
+
+function runHeaders() {
+    const raw = document.getElementById('hdrInput').value.trim();
+    const out = document.getElementById('hdrOut');
+    if (!raw) { out.innerHTML = ''; return; }
+    const hdrs = parseHeaders(raw);
+
+    // Parsed table
+    let tableRows = '';
+    hdrs.forEach((v, k) => {
+        tableRows += `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`;
+    });
+    let html = `<div class="tool-card"><div class="tool-label">Parsed headers (${hdrs.size})</div>
+        <table class="parsed-table"><tbody>${tableRows}</tbody></table></div>`;
+
+    // Security check
+    let checks = '';
+    SEC_HEADERS.forEach(h => {
+        const val = hdrs.get(h.name);
+        const present = val !== undefined && h.check(val);
+        const missing = val === undefined;
+        const badge = missing ? `<span class="badge ${h.sev}">${h.sev}</span>`
+                    : present ? `<span class="badge ok">✓ ok</span>`
+                    :           `<span class="badge warn">⚠ weak</span>`;
+        const valLine = val ? `<div class="hdr-check-val">${esc(val)}</div>` : '';
+        checks += `<div class="hdr-check-row">${badge}
+            <div class="hdr-check-right">
+                <div class="hdr-check-name">${h.label}</div>
+                ${valLine}
+                <div class="hdr-check-info">${missing ? h.info : present ? 'Header is present and correctly configured.' : h.info}</div>
+            </div></div>`;
+    });
+    html += `<div class="tool-card"><div class="tool-label">Security headers</div>
+        <div class="hdr-check-list">${checks}</div></div>`;
+
+    // Leaky headers
+    let leaks = '';
+    LEAKY.forEach(h => {
+        const val = hdrs.get(h.name);
+        if (val) leaks += `<div class="hdr-check-row"><span class="badge warn">⚠ leak</span>
+            <div class="hdr-check-right">
+                <div class="hdr-check-name">${h.label}: <span style="font-family:monospace;font-weight:400">${esc(val)}</span></div>
+                <div class="hdr-check-info">${h.info} Consider removing this header.</div>
+            </div></div>`;
+    });
+    if (leaks) html += `<div class="tool-card"><div class="tool-label">Information disclosure</div>
+        <div class="hdr-check-list">${leaks}</div></div>`;
+
+    out.innerHTML = html;
+}
+
+// ══════════════════ STRING EXTRACTOR ══════════════════
+const EXTRACTORS = [
+    { key:'ipv4',    label:'IPv4 Addresses',    rx:/\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g },
+    { key:'ipv6',    label:'IPv6 Addresses',    rx:/(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:)*::(?:[0-9a-fA-F]{1,4}:)*[0-9a-fA-F]{0,4}/g },
+    { key:'url',     label:'URLs',               rx:/https?:\/\/[^\s"'<>)]+/gi },
+    { key:'email',   label:'Email Addresses',    rx:/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g },
+    { key:'jwt',     label:'JWT Tokens',         rx:/eyJ[A-Za-z0-9\-_]+\.eyJ[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+/g },
+    { key:'sha512',  label:'SHA-512 Hashes',     rx:/\b[0-9a-fA-F]{128}\b/g },
+    { key:'sha256',  label:'SHA-256 Hashes',     rx:/\b[0-9a-fA-F]{64}\b/g },
+    { key:'sha1',    label:'SHA-1 Hashes',       rx:/\b[0-9a-fA-F]{40}\b/g },
+    { key:'md5',     label:'MD5 Hashes',         rx:/\b[0-9a-fA-F]{32}\b/g },
+    { key:'uuid',    label:'UUIDs',              rx:/\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b/g },
+    { key:'mac',     label:'MAC Addresses',      rx:/\b(?:[0-9A-Fa-f]{2}[:\-]){5}[0-9A-Fa-f]{2}\b/g },
+    { key:'pem',     label:'PEM / Key Headers',  rx:/-----BEGIN [A-Z ]+-----/g },
+    { key:'winpath', label:'Windows Paths',      rx:/[A-Za-z]:\\(?:[^\\\/:*?"<>|\r\n]+\\)*[^\\\/:*?"<>|\r\n]+/g },
+    { key:'unix',    label:'Unix Paths',         rx:/\/(?:[^\s\/]+\/){1,}[^\s\/]+/g },
+    { key:'b64',     label:'Base64 Strings',     rx:/(?:[A-Za-z0-9+\/]{4}){3,}(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?/g },
+];
+
+function runStrings() {
+    const text = document.getElementById('strInput').value;
+    const out  = document.getElementById('strOut');
+    if (!text.trim()) { out.innerHTML = ''; return; }
+
+    let html = '';
+    let totalFound = 0;
+    EXTRACTORS.forEach(e => {
+        const matches = [...new Set((text.match(e.rx) || []).map(s => s.trim()).filter(Boolean))];
+        if (!matches.length) return;
+        totalFound += matches.length;
+        const items = matches.map(m =>
+            `<div class="ext-item"><span class="ext-val">${esc(m)}</span>
+             <button class="copy-btn" onclick="navigator.clipboard.writeText(${JSON.stringify(m)})">Copy</button></div>`
+        ).join('');
+        html += `<div class="ext-group"><div class="ext-group-label">${e.label}<span class="ext-count">${matches.length}</span></div>
+            <div class="ext-items">${items}</div></div>`;
+    });
+
+    if (!totalFound) {
+        out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary)">No recognisable patterns found.</div>';
+    } else {
+        out.innerHTML = `<div class="tool-card">${html}</div>`;
+    }
+}
+
+// ── Util ──
+function copyEl(id){navigator.clipboard.writeText(document.getElementById(id).textContent).catch(()=>{});}
+
+// ── Ask AI ──
+function sendToAI(text, btn) {
+    if (window.parent && window.parent !== window && typeof window.parent.fillPrompt === 'function') {
+        window.parent.fillPrompt(text);
+        if (btn) {
+            const orig = btn.textContent;
+            btn.textContent = '✓ Sent';
+            setTimeout(() => btn.textContent = orig, 1500);
+        }
+    } else {
+        navigator.clipboard.writeText(text)
+            .then(() => alert('Copied to clipboard — paste into the AI chat.'))
+            .catch(() => alert('Open Security Tools from the chat panel to send directly to AI.'));
+    }
+}
+
+function askHashAI(btn) {
+    const input = document.getElementById('hashInput').value.trim();
+    if (!input) return;
+    const results = document.getElementById('hashResults').innerText.trim();
+    let msg = `I have this hash:\n${input}`;
+    if (results) msg += `\n\nHash identifier results:\n${results}`;
+    msg += '\n\nCan you tell me more about this hash type, how secure it is, and how to crack or use it?';
+    sendToAI(msg, btn);
+}
+
+function askEncAI(btn) {
+    const input = document.getElementById('encInput').value.trim();
+    if (!input) return;
+    const output = document.getElementById('encOutput').textContent.trim();
+    let msg = `I used the ${curEnc.toUpperCase()} encoder/decoder.\n\nInput: ${input}`;
+    if (output) msg += `\nOutput: ${output}`;
+    msg += '\n\nCan you analyze this and help me understand what this data represents?';
+    sendToAI(msg, btn);
+}
+
+function askJWTAI(btn) {
+    const raw = document.getElementById('jwtInput').value.trim();
+    if (!raw) return;
+    let msg = `I'm analyzing this JWT token:\n${raw}`;
+    const p = raw.split('.');
+    if (p.length === 3) {
+        try {
+            const hdr = b64url(p[0]), pld = b64url(p[1]);
+            msg += `\n\nDecoded header:\n${JSON.stringify(hdr, null, 2)}`;
+            msg += `\n\nDecoded payload:\n${JSON.stringify(pld, null, 2)}`;
+        } catch (e) {}
+    }
+    msg += '\n\nCan you check this JWT for security issues, weak algorithms, or sensitive data exposure?';
+    sendToAI(msg, btn);
+}
+
+function askCipherAI(btn) {
+    const input = document.getElementById('cipherIn').value.trim();
+    if (!input) return;
+    const output = document.getElementById('cipherOut').textContent.trim();
+    let msg = `I'm working with a ${curCipher} cipher.\n\nInput: ${input}`;
+    if (output) msg += `\nOutput: ${output}`;
+    msg += '\n\nCan you help me analyze or crack this cipher?';
+    sendToAI(msg, btn);
+}
+
+function askHeadersAI(btn) {
+    const raw = document.getElementById('hdrInput').value.trim();
+    if (!raw) return;
+    const hdrs = parseHeaders(raw);
+    const missing = SEC_HEADERS.filter(h => !hdrs.has(h.name)).map(h => h.label);
+    const leaking = LEAKY.filter(h => hdrs.has(h.name)).map(h => `${h.label}: ${hdrs.get(h.name)}`);
+    let msg = `I'm analyzing these HTTP response headers:\n\n${raw}`;
+    if (missing.length) msg += `\n\nMissing security headers: ${missing.join(', ')}`;
+    if (leaking.length) msg += `\n\nLeaking server info: ${leaking.join(', ')}`;
+    msg += '\n\nCan you explain the security risks and tell me how to fix each issue?';
+    sendToAI(msg, btn);
+}
+
+function askStringsAI(btn) {
+    const text = document.getElementById('strInput').value.trim();
+    if (!text) return;
+    const found = [];
+    EXTRACTORS.forEach(e => {
+        const matches = [...new Set((text.match(e.rx) || []))];
+        if (matches.length) found.push(`${e.label}: ${matches.slice(0, 5).join(', ')}${matches.length > 5 ? ` (+${matches.length - 5} more)` : ''}`);
+    });
+    let msg = `I extracted the following patterns from a text/binary dump:\n\n${found.join('\n')}`;
+    msg += `\n\nOriginal input (first 500 chars):\n${text.slice(0, 500)}`;
+    msg += '\n\nCan you help me analyze what this data represents and flag anything suspicious?';
+    sendToAI(msg, btn);
+}
+
+function askRxAI(btn) {
+    const pat = document.getElementById('rxPat').value.trim();
+    if (!pat) return;
+    const flags = document.getElementById('rxFlags').value;
+    const input = document.getElementById('rxInput').value.trim();
+    const count = document.getElementById('rxCount').textContent;
+    let msg = `I'm testing this regex: /${pat}/${flags}`;
+    if (input) msg += `\n\nTest string:\n${input}`;
+    if (count) msg += `\n\nResult: ${count}`;
+    msg += '\n\nCan you help me understand or improve this regex?';
+    sendToAI(msg, btn);
+}
+
+// ══════════════════ THREAT INTEL ══════════════════
+async function runHashCheck() {
+    var hash = document.getElementById('threatHashInput').value.trim();
+    var out  = document.getElementById('threatHashOut');
+    if (!hash) return;
+    out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Querying MalwareBazaar…</div>';
+    try {
+        var r = await fetch('/api/tools/hash-check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ hash: hash })
+        });
+        var d = await r.json();
+        if (d.query_status === 'hash_not_found') {
+            out.innerHTML = '<div class="tool-card"><span class="badge ok">✓ Clean</span> <span style="font-size:13px;margin-left:6px;">Not found in MalwareBazaar — no known malware signature.</span></div>';
+            return;
+        }
+        if (d.query_status !== 'ok' || !d.data || !d.data.length) {
+            out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">Error: ' + (d.query_status || 'unknown') + '</div>';
+            return;
+        }
+        var rec = d.data[0];
+        var html = '<div class="tool-card"><div style="margin-bottom:12px;"><span class="badge low">🚨 MALWARE</span><span style="font-size:13px;margin-left:8px;font-weight:600;">Found in MalwareBazaar</span></div>';
+        [['File Name', rec.file_name], ['File Type', rec.file_type],
+         ['File Size', rec.file_size ? rec.file_size + ' bytes' : null],
+         ['Signature', rec.signature], ['First Seen', rec.first_seen],
+         ['Tags', rec.tags ? rec.tags.join(', ') : null],
+         ['SHA256', rec.sha256_hash]
+        ].forEach(function(f) {
+            if (f[1]) html += '<div class="threat-row"><span class="threat-key">' + f[0] + '</span><span class="threat-val">' + esc(String(f[1])) + '</span></div>';
+        });
+        if (rec.vendor_intel) {
+            var avs = Object.entries(rec.vendor_intel).slice(0, 5).map(function(e){ return esc(String(e[0])) + ': ' + esc(String(e[1].result || '?')); }).join(' · ');
+            if (avs) html += '<div class="threat-row"><span class="threat-key">AV Detections</span><span class="threat-val">' + avs + '</span></div>';
+        }
+        html += '<div class="pw-warn" style="margin-top:10px;">⚠ Isolate host immediately. Kill associated process, preserve disk/memory image for forensics, then remediate.</div></div>';
+        out.innerHTML = html;
+    } catch(e) {
+        out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">Request failed: ' + esc(e.message) + '</div>';
+    }
+}
+
+async function runURLCheck() {
+    var url = document.getElementById('threatURLInput').value.trim();
+    var out  = document.getElementById('threatURLOut');
+    if (!url) return;
+    out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Querying URLhaus…</div>';
+    try {
+        var r = await fetch('/api/tools/url-check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url })
+        });
+        var d = await r.json();
+        if (d.query_status === 'no_results') {
+            out.innerHTML = '<div class="tool-card"><span class="badge ok">✓ Clean</span> <span style="font-size:13px;margin-left:6px;">Not found in URLhaus — no known malware distribution.</span></div>';
+            return;
+        }
+        var html = '<div class="tool-card"><div style="margin-bottom:12px;"><span class="badge low">🚨 MALICIOUS</span><span style="font-size:13px;margin-left:8px;font-weight:600;">Found in URLhaus</span></div>';
+        [['Threat', d.threat], ['Status', d.url_status], ['Host', d.host],
+         ['Reported', d.date_added], ['Tags', d.tags ? d.tags.join(', ') : null]
+        ].forEach(function(f) {
+            if (f[1]) html += '<div class="threat-row"><span class="threat-key">' + f[0] + '</span><span class="threat-val">' + esc(String(f[1])) + '</span></div>';
+        });
+        var payloads = d.payloads || [];
+        if (payloads.length) {
+            var ps = payloads.slice(0, 3).map(function(p){ return esc(p.signature || 'unknown') + ' (' + esc(p.file_type || '?') + ')'; }).join(', ');
+            html += '<div class="threat-row"><span class="threat-key">Payloads</span><span class="threat-val">' + ps + '</span></div>';
+        }
+        html += '<div class="pw-warn" style="margin-top:10px;">⚠ Block this URL/host at firewall and DNS. If already clicked, isolate machine and scan for dropped payloads.</div></div>';
+        out.innerHTML = html;
+    } catch(e) {
+        out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">Request failed: ' + esc(e.message) + '</div>';
+    }
+}
+
+function askThreatAI(btn) {
+    var hash    = document.getElementById('threatHashInput').value.trim();
+    var url     = document.getElementById('threatURLInput').value.trim();
+    var hashOut = document.getElementById('threatHashOut').innerText.trim();
+    var urlOut  = document.getElementById('threatURLOut').innerText.trim();
+    if (!hash && !url) return;
+    var msg = 'Threat Intelligence Lookup\n';
+    if (hash) { msg += 'Hash: ' + hash; if (hashOut) msg += '\nResult: ' + hashOut; }
+    if (url)  { msg += '\nURL: ' + url;  if (urlOut)  msg += '\nResult: ' + urlOut; }
+    msg += '\n\nCan you explain this threat, what malware family it likely belongs to, and walk me through containment and remediation steps?';
+    sendToAI(msg, btn);
+}
+
+// ══════════════════ FILE SCANNER ══════════════════
+var _scanSummary = [];
+
+function fmtBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+    return (b/1048576).toFixed(1) + ' MB';
+}
+
+async function sha256hex(buffer) {
+    var hb = await crypto.subtle.digest('SHA-256', buffer);
+    return Array.from(new Uint8Array(hb)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+}
+
+function clearScan() {
+    document.getElementById('scanResults').innerHTML = '';
+    document.getElementById('scanProgress').style.display = 'none';
+    document.getElementById('scanFileInput').value = '';
+    _scanSummary = [];
+}
+
+async function startScan(files) {
+    if (!files || !files.length) return;
+    var total = files.length;
+    var prog = document.getElementById('scanProgress');
+    var fill = document.getElementById('scanProgFill');
+    var lbl  = document.getElementById('scanProgLbl');
+    var out  = document.getElementById('scanResults');
+    if (!window.crypto || !window.crypto.subtle) {
+        out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">File scanner requires a secure (HTTPS) context. Please access the app via HTTPS.</div>';
+        return;
+    }
+    prog.style.display = 'block';
+    out.innerHTML = '';
+    _scanSummary = [];
+
+    for (var i = 0; i < total; i++) {
+        var file = files[i];
+        lbl.textContent = 'Hashing ' + (i+1) + ' / ' + total + ': ' + file.name;
+        fill.style.width = Math.round((i / total) * 100) + '%';
+
+        // Create row placeholder
+        var rowId = 'scan-row-' + i;
+        var row = document.createElement('div');
+        row.className = 'scan-file-row';
+        row.id = rowId;
+        row.innerHTML = '<span class="scan-file-name" title="' + esc(file.name) + '">' + esc(file.name) + '</span>'
+            + '<span class="scan-file-size">' + fmtBytes(file.size) + '</span>'
+            + '<span class="scan-file-hash" id="scan-hash-' + i + '">computing…</span>'
+            + '<span class="scan-status pending" id="scan-st-' + i + '">⏳</span>';
+        out.appendChild(row);
+
+        try {
+            var buf  = await file.arrayBuffer();
+            var hash = await sha256hex(buf);
+            document.getElementById('scan-hash-' + i).textContent = hash.slice(0, 16) + '…';
+
+            // Query MalwareBazaar via backend proxy (avoids browser CORS restrictions)
+            var r = await fetch('/api/tools/hash-check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hash: hash })
+            });
+            var d = await r.json();
+
+            var st = document.getElementById('scan-st-' + i);
+            if (d.query_status === 'hash_not_found') {
+                st.textContent = '✓ Clean';
+                st.className = 'scan-status clean';
+                _scanSummary.push({ name: file.name, hash: hash, result: 'clean' });
+            } else if (d.query_status === 'ok' && d.data && d.data.length) {
+                var rec = d.data[0];
+                st.textContent = '🚨 ' + (rec.signature || 'Malware');
+                st.className = 'scan-status mal';
+                row.style.borderColor = 'rgba(248,113,113,0.4)';
+                row.style.background = 'rgba(248,113,113,0.04)';
+                _scanSummary.push({ name: file.name, hash: hash, result: 'malware', sig: rec.signature, tags: (rec.tags||[]).join(',') });
+            } else {
+                st.textContent = '— unknown';
+                st.className = 'scan-status pending';
+                _scanSummary.push({ name: file.name, hash: hash, result: 'unknown' });
+            }
+        } catch(e) {
+            var st2 = document.getElementById('scan-st-' + i);
+            if (st2) { st2.textContent = 'error'; st2.className = 'scan-status pending'; }
+            _scanSummary.push({ name: file.name, hash: '', result: 'error', err: e.message });
+        }
+
+        // Small delay to avoid rate-limiting
+        if (i < total - 1) await new Promise(function(res){ setTimeout(res, 400); });
+    }
+
+    fill.style.width = '100%';
+    var malCount = _scanSummary.filter(function(s){ return s.result === 'malware'; }).length;
+    lbl.textContent = 'Scan complete — ' + total + ' file' + (total>1?'s':'') + ' scanned'
+        + (malCount ? ', ' + malCount + ' threat' + (malCount>1?'s':'') + ' found ⚠' : ', no known threats ✓');
+}
+
+function askScanAI(btn) {
+    if (!_scanSummary.length) return;
+    var threats = _scanSummary.filter(function(s){ return s.result === 'malware'; });
+    var clean   = _scanSummary.filter(function(s){ return s.result === 'clean'; }).length;
+    var msg = 'File Scan Summary\nTotal files scanned: ' + _scanSummary.length
+        + '\nClean: ' + clean + '\nThreats found: ' + threats.length + '\n';
+    if (threats.length) {
+        msg += '\nMalicious files:\n';
+        threats.forEach(function(t){ msg += '- ' + t.name + ' (hash: ' + t.hash.slice(0,16) + '…, sig: ' + (t.sig||'unknown') + ', tags: ' + (t.tags||'—') + ')\n'; });
+    }
+    msg += '\nCan you explain what these threats are, how they may behave on the system, and walk me through containment and removal steps?';
+    sendToAI(msg, btn);
+}
+
+// Drag-and-drop on the scan zone
+(function() {
+    var zone = document.getElementById('scanDropZone');
+    if (!zone) return;
+    zone.addEventListener('dragover', function(e){ e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', function(){ zone.classList.remove('drag-over'); });
+    zone.addEventListener('drop', function(e){
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        if (e.dataTransfer && e.dataTransfer.files.length) startScan(e.dataTransfer.files);
+    });
+})();
+
+// Init
+if (window.self !== window.top) document.body.classList.add('in-iframe');
+resetSub();
+// Auto-switch to tab specified in URL hash (e.g. tools.html#hash) and scroll active tab into view
+(function () {
+    var tab = location.hash.slice(1);
+    if (tab) window.switchToTab(tab);
+    // Scroll the active tab button into view in the tab bar
+    var activeTab = document.querySelector('.tool-tab.active');
+    if (activeTab) activeTab.scrollIntoView({ block: 'nearest', inline: 'center' });
+})();
+</script>
+</body>
+</html>

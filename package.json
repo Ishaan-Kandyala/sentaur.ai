@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "feedparser": "^2.2.10",
+    "marked": "^18.0.2",
+    "openai": "^6.29.0",
+    "pip": "^0.0.1"
+  }
+}

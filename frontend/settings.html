@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f0f4f8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Settings – Sentaur AI</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .settings-section { display: flex; flex-direction: column; gap: 12px; }
+
+        .settings-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            opacity: 0.45;
+            margin: 8px 0 0;
+        }
+
+        .beta-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+            background: #fafafa;
+        }
+        .beta-row-info { display: flex; flex-direction: column; gap: 3px; }
+        .beta-row-title {
+            font-size: 15px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .beta-badge {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            background: #4a6cf7;
+            color: white;
+            padding: 1px 6px;
+            border-radius: 99px;
+            text-transform: uppercase;
+        }
+        .beta-row-desc { font-size: 12px; color: #888; }
+
+        /* Toggle switch */
+        .toggle-wrap { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+        .toggle-wrap input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: #ccc;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .toggle-slider::after {
+            content: "";
+            position: absolute;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: white;
+            top: 3px; left: 3px;
+            transition: left 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .toggle-wrap input:checked + .toggle-slider { background: #4a6cf7; }
+        .toggle-wrap input:checked + .toggle-slider::after { left: 23px; }
+
+        .save-note { font-size: 12px; color: #4a6cf7; display: none; }
+
+        .profile-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0 16px;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 4px;
+        }
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #e5e7eb;
+        }
+        .profile-initial {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4a6cf7, #7c3aed);
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .profile-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        .profile-email {
+            font-size: 13px;
+            color: #888;
+        }
+
+        /* City autocomplete */
+        .city-wrap {
+            position: relative;
+        }
+        .city-wrap input {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .city-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0; right: 0;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            z-index: 100;
+            overflow: hidden;
+        }
+        .city-option {
+            padding: 11px 14px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.1s;
+        }
+        .city-option:hover, .city-option.active {
+            background: #f0f4ff;
+        }
+        .city-option-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .city-option-text { display: flex; flex-direction: column; }
+        .city-option-name { font-weight: 500; color: #1a1a2e; }
+        .city-option-sub { font-size: 12px; color: #888; }
+
+        .city-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .city-field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #444;
+        }
+        .state-input {
+            background: #f7f8fa !important;
+            color: #888 !important;
+            cursor: default !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Profile -->
+    <div class="profile-section">
+        <img id="profileAvatar" class="profile-avatar" src="" alt="" style="display:none"
+             onerror="this.style.display='none'; document.getElementById('profileInitial').style.display='flex'">
+        <div id="profileInitial" class="profile-initial">S</div>
+        <div id="profileName" class="profile-name"></div>
+        <div id="profileEmail" class="profile-email"></div>
+    </div>
+
+    <div class="settings-section">
+        <p class="settings-label">General</p>
+
+        <div class="city-row">
+            <div class="city-field">
+                <label>City</label>
+                <div class="city-wrap">
+                    <input id="cityInput" placeholder="Search city..." autocomplete="off">
+                    <div id="cityDropdown" class="city-dropdown"></div>
+                </div>
+            </div>
+            <div class="city-field">
+                <label>State / Region</label>
+                <input id="stateInput" class="state-input" placeholder="Auto-filled" readonly>
+            </div>
+        </div>
+
+        <button onclick="saveSettings()">Save</button>
+        <span class="save-note" id="saveNote">✓ Saved</span>
+    </div>
+
+    <div class="settings-section">
+        <p class="settings-label">Beta Features</p>
+
+        <div class="beta-row">
+            <div class="beta-row-info">
+                <div class="beta-row-title">
+                    🌤️ Daily Weather
+                    <span class="beta-badge">Beta</span>
+                </div>
+                <div class="beta-row-desc">AI emails you a weather update every morning at 8 AM UTC</div>
+            </div>
+            <label class="toggle-wrap">
+                <input type="checkbox" id="dailyWeatherToggle" onchange="saveSettings()">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <button onclick="logout()" style="margin-top:8px; background:#d9534f;">Logout</button>
+</div>
+
+<script src="script.js"></script>
+<script>
+    let searchTimeout = null;
+    let activeIndex = -1;
+    let currentResults = [];
+
+    const cityInput = document.getElementById("cityInput");
+    const dropdown = document.getElementById("cityDropdown");
+    const stateInput = document.getElementById("stateInput");
+
+    cityInput.addEventListener("input", () => {
+        clearTimeout(searchTimeout);
+        const q = cityInput.value.trim();
+        if (q.length < 2) { hideDropdown(); return; }
+        searchTimeout = setTimeout(() => searchCities(q), 300);
+    });
+
+    cityInput.addEventListener("keydown", (e) => {
+        const items = dropdown.querySelectorAll(".city-option");
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            activeIndex = Math.min(activeIndex + 1, items.length - 1);
+            updateActive(items);
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            activeIndex = Math.max(activeIndex - 1, 0);
+            updateActive(items);
+        } else if (e.key === "Enter" && activeIndex >= 0) {
+            e.preventDefault();
+            selectCity(currentResults[activeIndex]);
+        } else if (e.key === "Escape") {
+            hideDropdown();
+        }
+    });
+
+    document.addEventListener("click", (e) => {
+        if (!e.target.closest(".city-wrap")) hideDropdown();
+    });
+
+    function updateActive(items) {
+        items.forEach((el, i) => el.classList.toggle("active", i === activeIndex));
+    }
+
+    async function searchCities(q) {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        try {
+            const res = await fetch(`/city-search?q=${encodeURIComponent(q)}`, {
+                headers: { "Authorization": "Bearer " + token }
+            });
+            currentResults = await res.json();
+            renderDropdown(currentResults);
+        } catch (_) {}
+    }
+
+    function renderDropdown(results) {
+        activeIndex = -1;
+        dropdown.innerHTML = "";
+        if (!results.length) { hideDropdown(); return; }
+
+        results.forEach((r, i) => {
+            const item = document.createElement("div");
+            item.className = "city-option";
+            const sub = [r.state, r.country].filter(Boolean).join(", ");
+            item.innerHTML = `
+                <span class="city-option-icon">📍</span>
+                <span class="city-option-text">
+                    <span class="city-option-name">${r.city}</span>
+                    ${sub ? `<span class="city-option-sub">${sub}</span>` : ""}
+                </span>`;
+            item.addEventListener("mousedown", (e) => {
+                e.preventDefault();
+                selectCity(r);
+            });
+            dropdown.appendChild(item);
+        });
+        dropdown.style.display = "block";
+    }
+
+    function selectCity(r) {
+        cityInput.value = r.city;
+        stateInput.value = [r.state, r.country].filter(Boolean).join(", ");
+        hideDropdown();
+    }
+
+    function hideDropdown() {
+        dropdown.style.display = "none";
+        activeIndex = -1;
+    }
+
+    async function loadSettings() {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        try {
+            const res = await fetch("/settings/me", {
+                headers: { "Authorization": "Bearer " + token }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+
+            // Profile section
+            if (data.avatar_url) {
+                const img = document.getElementById("profileAvatar");
+                img.src = data.avatar_url;
+                img.style.display = "block";
+                document.getElementById("profileInitial").style.display = "none";
+            }
+            document.getElementById("profileName").textContent = data.name || "";
+            document.getElementById("profileEmail").textContent = data.email || "";
+
+            // City: stored as "City, State, Country"
+            if (data.city) {
+                const parts = data.city.split("|");
+                cityInput.value = parts[0] || "";
+                stateInput.value = parts[1] || "";
+            }
+            document.getElementById("dailyWeatherToggle").checked = !!data.daily_weather_enabled;
+        } catch (_) {}
+    }
+
+    async function saveSettings() {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const cityName = cityInput.value.trim();
+        const stateName = stateInput.value.trim();
+        // Store as "City|State" so we can split on load
+        const city = cityName ? (stateName ? `${cityName}|${stateName}` : cityName) : "";
+        const daily_weather_enabled = document.getElementById("dailyWeatherToggle").checked;
+        await fetch("/settings/me", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify({ city, daily_weather_enabled })
+        });
+        const note = document.getElementById("saveNote");
+        note.style.display = "block";
+        setTimeout(() => note.style.display = "none", 2000);
+    }
+
+    loadSettings();
+</script>
+</body>
+</html>

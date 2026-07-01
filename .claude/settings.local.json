@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat -ano)",
+      "Bash(findstr :8000)",
+      "Bash(.venv/Scripts/pip install:*)",
+      "Bash(python -m py_compile backend/*.py)",
+      "Bash(python3 -m py_compile backend/__init__.py backend/ai.py backend/auth.py backend/database.py backend/emailer.py backend/main.py backend/models.py backend/scheduler.py backend/sentaur.py backend/sentaur_core.py backend/tools.py backend/weather.py backend/providers/openai_provider.py backend/providers/groq_provider.py backend/providers/deepseek_provider.py backend/providers/gemini_provider.py backend/providers/mistral_provider.py backend/providers/cerebras_provider.py backend/providers/nvidia_provider.py backend/providers/together_provider.py backend/providers/local_provider.py backend/providers/list_models.py backend/providers/test_env.py list_models.py test_env.py)"
+    ]
+  }
+}

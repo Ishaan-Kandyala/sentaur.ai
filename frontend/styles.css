@@ -1,0 +1,1118 @@
+/* ═══════════════════════════════════════════
+   CROSS-PLATFORM MOBILE RESET
+   Targets: iPhone (Safari), Android Chrome,
+            Google Pixel, Samsung, etc.
+═══════════════════════════════════════════ */
+
+/* Remove grey tap flash on Android & iOS */
+* { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+
+html {
+    /* JS will set --vh for iOS Safari keyboard fix */
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    /* Smooth fonts on iOS & macOS */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Prevent Android pull-to-refresh & iOS bounce */
+    overscroll-behavior: none;
+    /* Stop iOS Safari from auto-resizing text */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+/* Remove default iOS / Android input chrome */
+input, textarea, select, button {
+    -webkit-appearance: none;
+    appearance: none;
+    font-family: inherit;
+}
+
+/* iOS momentum scrolling on all scroll containers */
+.chatbox,
+.sidebar,
+.copilot-model-menu,
+.app-menu-dropdown {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent iOS long-press popup on non-text elements */
+img, button, a {
+    -webkit-touch-callout: none;
+}
+
+/* ── Variables ── */
+:root {
+    --bg: #f0f4f8;
+    --text: #1a1a2e;
+    --bubble-user: #4a6cf7;
+    --bubble-bot: #e8edf5;
+    --sidebar-bg: rgba(255,255,255,0.5);
+    --input-box-bg: #ffffff;
+    --input-box-border: #b3cfe8;
+    --input-box-glow: rgba(100,170,230,0.15);
+    --model-menu-bg: #ffffff;
+    --border: rgba(0,0,0,0.07);
+}
+
+body.dark {
+    --bg: #111827;
+    --text: #e8edf5;
+    --bubble-user: #6d8bff;
+    --bubble-bot: #1e2a3a;
+    --sidebar-bg: rgba(0,0,0,0.3);
+    --input-box-bg: #1a2333;
+    --input-box-border: #4a6cf7;
+    --input-box-glow: rgba(74,108,247,0.12);
+    --model-menu-bg: #1e2a3a;
+    --border: rgba(255,255,255,0.06);
+}
+
+/* ── Layout ── */
+.layout {
+    display: flex;
+    /* Fallback → dvh (Chrome 108+, iOS 15.4+) → JS --vh for older Safari */
+    height: 100vh;
+    height: 100dvh;
+    height: calc(var(--vh, 1dvh) * 100);
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* ── Sidebar ── */
+.sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--sidebar-bg);
+    backdrop-filter: blur(12px);
+    padding: 20px;
+    border-right: 1px solid rgba(255,255,255,0.2);
+    overflow-y: auto;
+}
+
+.convo-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 4px;
+    font-size: 13px;
+}
+.convo-item:hover { background: rgba(255,255,255,0.15); }
+.convo-item.active { background: rgba(255,255,255,0.25); font-weight: bold; }
+.convo-item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.del-btn { background: none; border: none; cursor: pointer; opacity: 0.4; font-size: 11px; padding: 0 4px; }
+.del-btn:hover { opacity: 1; }
+
+.sidebar-heading {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.45;
+    margin: 0 0 8px 4px;
+}
+
+/* ── Chat Area ── */
+.chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 24px 20px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* ── Top Bar ── */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-shrink: 0;
+}
+
+.topbar-logo {
+    height: 44px;
+    width: auto;
+    display: block;
+    border-radius: 10px;
+}
+
+.page-logo {
+    width: 200px;
+    height: auto;
+    border-radius: 16px;
+    margin-bottom: 8px;
+    align-self: center;
+}
+
+/* ── App Menu ── */
+.app-menu-wrap {
+    position: relative;
+}
+
+.app-menu-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    width: 38px;
+    height: 38px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 7px;
+    transition: background 0.15s;
+    touch-action: manipulation;
+}
+
+.app-menu-btn span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: all 0.2s;
+}
+
+.app-menu-btn:hover { background: rgba(0,0,0,0.07); }
+body.dark .app-menu-btn:hover { background: rgba(255,255,255,0.08); }
+
+/* Animate to X when open */
+.app-menu-btn.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.app-menu-btn.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.app-menu-btn.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.app-menu-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--model-menu-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 6px 28px rgba(0,0,0,0.13);
+    padding: 6px;
+    min-width: 200px;
+    z-index: 200;
+    animation: fadeIn 0.15s ease;
+}
+
+.app-menu-dropdown.open { display: block; }
+
+.app-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    background: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    text-decoration: none;
+    text-align: left;
+    transition: background 0.12s;
+    touch-action: manipulation;
+}
+
+.app-menu-item:hover { background: rgba(74,108,247,0.07); }
+.app-menu-item.danger { color: #e55; }
+.app-menu-item.danger:hover { background: rgba(229,85,85,0.07); }
+
+.ami-icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
+
+/* Dark mode toggle switch */
+.ami-toggle {
+    margin-left: auto;
+    width: 34px;
+    height: 19px;
+    border-radius: 10px;
+    background: #ccc;
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+
+.ami-toggle::after {
+    content: "";
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: white;
+    top: 2px;
+    left: 2px;
+    transition: left 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+body.dark .ami-toggle { background: #4a6cf7; }
+body.dark .ami-toggle::after { left: 17px; }
+
+.ami-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 8px;
+}
+
+/* ── Chatbox ── */
+.chatbox {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 6px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Welcome State ── */
+.welcome-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    text-align: center;
+}
+
+.welcome-logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a6cf7, #7c3aed);
+    color: white;
+    font-weight: 700;
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.welcome-state h3 {
+    font-size: 20px;
+    margin: 0;
+    color: var(--text);
+    font-weight: 500;
+}
+
+/* ── Message Rows ── */
+.msg-row {
+    display: flex;
+    align-items: flex-end;
+    margin: 14px 0;
+    animation: fadeIn 0.2s ease;
+    gap: 10px;
+}
+
+.msg-row.user { justify-content: flex-end; }
+
+/* ── Avatar ── */
+.bot-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a6cf7, #7c3aed);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* ── Bubble Wrapper (bot) ── */
+.bubble-wrapper {
+    display: flex;
+    flex-direction: column;
+    max-width: 68%;
+    gap: 4px;
+}
+
+/* ── Bubbles ── */
+.bubble {
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 15px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+}
+
+.msg-row.user .bubble {
+    background: var(--bubble-user);
+    color: white;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 2px 8px rgba(74,108,247,0.25);
+    max-width: 68%;
+}
+
+.msg-row.bot .bubble {
+    background: var(--bubble-bot);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+}
+
+/* ── Thinking indicator ── */
+.think-indicator {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: rgba(120,120,130,0.9);
+    margin-bottom: 8px;
+}
+.think-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(120,120,180,0.7);
+    animation: thinkPulse 1s ease-in-out infinite;
+    flex-shrink: 0;
+}
+@keyframes thinkPulse {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+}
+.think-done {
+    font-size: 12px;
+    color: rgba(120,120,130,0.6);
+    margin-bottom: 8px;
+    user-select: none;
+}
+.think-content {
+    background: rgba(0,0,0,0.04);
+    border-left: 2px solid rgba(120,120,200,0.3);
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: rgba(80,80,110,0.85);
+    line-height: 1.5;
+    max-height: 180px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+}
+body.dark .think-content {
+    background: rgba(255,255,255,0.05);
+    border-left-color: rgba(150,150,230,0.35);
+    color: rgba(180,180,210,0.8);
+}
+.think-hidden {
+    display: none;
+}
+
+/* ── Code blocks inside bubbles ── */
+.bubble pre {
+    background: rgba(0,0,0,0.06);
+    border-radius: 8px;
+    padding: 12px 14px;
+    overflow-x: auto;
+    max-width: 100%;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 8px 0;
+    white-space: pre;
+}
+body.dark .bubble pre {
+    background: rgba(255,255,255,0.07);
+}
+.bubble code {
+    font-family: "Menlo", "Consolas", "Monaco", monospace;
+    font-size: 13px;
+}
+.bubble p code {
+    background: rgba(0,0,0,0.07);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+body.dark .bubble p code {
+    background: rgba(255,255,255,0.1);
+}
+
+/* ── Copy Button ── */
+.bubble-actions {
+    display: flex;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.msg-row.bot:hover .bubble-actions { opacity: 1; }
+
+.copy-btn {
+    background: none;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    color: #666;
+    font-family: inherit;
+    transition: background 0.15s;
+}
+
+.copy-btn:hover { background: rgba(0,0,0,0.06); }
+
+body.dark .copy-btn { border-color: rgba(255,255,255,0.2); color: #aaa; }
+body.dark .copy-btn:hover { background: rgba(255,255,255,0.07); }
+
+/* ── Typing Dots ── */
+.typing-bubble {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    padding: 14px 18px !important;
+    width: fit-content;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #999;
+    animation: dotBounce 1.2s infinite ease-in-out;
+}
+
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dotBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ─────────────────────────────────────────
+   COPILOT INPUT SECTION
+───────────────────────────────────────── */
+.copilot-input-section {
+    flex-shrink: 0;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ── Suggestion Pills ── */
+.suggestion-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    padding: 4px 0;
+}
+
+.suggestion-pill {
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.75);
+    border: 1px solid rgba(0,0,0,0.1);
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text);
+    font-family: inherit;
+    backdrop-filter: blur(6px);
+    transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+    white-space: nowrap;
+    animation: fadeIn 0.3s ease both;
+}
+
+.suggestion-pill:hover {
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+
+body.dark .suggestion-pill {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.12);
+}
+
+body.dark .suggestion-pill:hover {
+    background: rgba(255,255,255,0.14);
+}
+
+/* ── Copilot Input Box ── */
+.copilot-input-box {
+    background: var(--input-box-bg);
+    border: 1.5px solid var(--input-box-border);
+    border-radius: 20px;
+    padding: 14px 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 0 0 5px var(--input-box-glow);
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.copilot-input-box:focus-within {
+    box-shadow: 0 0 0 6px var(--input-box-glow);
+    border-color: #7ab8e0;
+}
+
+body.dark .copilot-input-box:focus-within {
+    border-color: #6d8bff;
+}
+
+#msg {
+    border: none;
+    background: transparent;
+    outline: none;
+    resize: none;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--text);
+    min-height: 28px;
+    max-height: 200px;
+    overflow-y: auto;
+    line-height: 1.5;
+    width: 100%;
+}
+
+#msg::placeholder { color: #9aadbe; }
+body.dark #msg::placeholder { color: #4a5a70; }
+
+/* ── Toolbar inside input box ── */
+.copilot-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.copilot-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ── Attach (+) button ── */
+.copilot-attach-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(0,0,0,0.2);
+    background: none;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    line-height: 1;
+    transition: background 0.15s;
+}
+
+.copilot-attach-btn:hover { background: rgba(0,0,0,0.06); }
+
+body.dark .copilot-attach-btn { border-color: rgba(255,255,255,0.2); }
+body.dark .copilot-attach-btn:hover { background: rgba(255,255,255,0.07); }
+
+/* ── Model selector pill ── */
+.model-selector-wrap { position: relative; }
+
+.copilot-model-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(0,0,0,0.15);
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    font-family: inherit;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.copilot-model-btn:hover { background: rgba(0,0,0,0.05); }
+body.dark .copilot-model-btn { border-color: rgba(255,255,255,0.18); }
+body.dark .copilot-model-btn:hover { background: rgba(255,255,255,0.06); }
+
+.model-chevron {
+    font-size: 11px;
+    opacity: 0.6;
+    display: inline-block;
+    transition: transform 0.25s ease;
+}
+.copilot-model-btn.open .model-chevron { transform: rotate(180deg); }
+
+/* ── Model dropdown menu ── */
+.copilot-model-menu {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 0;
+    background: var(--model-menu-bg);
+    border-radius: 14px;
+    box-shadow: 0 6px 28px rgba(0,0,0,0.14);
+    padding: 8px;
+    min-width: 290px;
+    z-index: 200;
+    border: 1px solid var(--border);
+}
+
+.copilot-model-menu.open { display: block; }
+
+.model-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.model-option:hover { background: rgba(74,108,247,0.07); }
+.model-option.active { background: rgba(74,108,247,0.1); }
+
+.model-option-icon {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.model-option-text strong {
+    display: block;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.model-option-text small {
+    color: #8899aa;
+    font-size: 12px;
+}
+
+/* ── Toolbar right: mic beside send ── */
+.copilot-toolbar-right {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ── Mic button ── */
+.copilot-mic-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    opacity: 0.45;
+    transition: opacity 0.15s, transform 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+.copilot-mic-btn:hover { opacity: 0.85; transform: scale(1.05); }
+.copilot-mic-btn.recording { opacity: 1; color: #e53e3e; animation: mic-pulse 1s ease-in-out infinite; }
+
+@keyframes mic-pulse {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.1); }
+}
+
+/* ── Send button ── */
+.copilot-send-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #4a6cf7;
+    border: none;
+    cursor: pointer;
+    color: white;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, transform 0.1s;
+    flex-shrink: 0;
+}
+
+.copilot-send-btn:hover { background: #3a5ce5; transform: scale(1.05); }
+
+/* ── Model Switch Divider (in chat) ── */
+.model-option-icon img {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    display: block;
+}
+
+.model-switch-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: rgba(128,128,128,0.65);
+    padding: 6px 0;
+    margin: 4px 0;
+    letter-spacing: 0.03em;
+    user-select: none;
+}
+.model-switch-divider::before,
+.model-switch-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(128,128,128,0.25);
+}
+.divider-waves {
+    opacity: 0.4;
+    font-size: 11px;
+}
+
+
+/* ── Image Preview Strip ── */
+.img-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: 2px;
+}
+
+.img-thumb-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.img-thumb {
+    height: 56px;
+    width: 56px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    display: block;
+}
+
+.img-thumb-remove {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #e44;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+}
+
+/* ── Image in chat bubble ── */
+.msg-image {
+    max-width: 220px;
+    max-height: 160px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    display: block;
+}
+
+/* ── Image generation loading state ── */
+.img-gen-loading {
+    font-size: 13px;
+    color: #888;
+    padding: 8px 0 4px;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+/* ── AI-generated image ── */
+.generated-img {
+    max-width: 100%;
+    max-height: 480px;
+    border-radius: 12px;
+    margin-top: 10px;
+    display: block;
+    border: 1px solid var(--border);
+}
+
+/* ── Kebab menu button (mobile only) ── */
+.hamburger {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 26px;
+    line-height: 1;
+    color: var(--text);
+    padding: 4px 8px;
+    align-items: center;
+    touch-action: manipulation;
+}
+
+/* ── Touch optimisation for all interactive elements ── */
+button, a, .suggestion-pill {
+    touch-action: manipulation;
+}
+
+/* ── Overlays ── */
+.sidebar-overlay,
+.model-menu-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 99;
+}
+.sidebar-overlay.open,
+.model-menu-overlay.open { display: block; }
+.model-menu-overlay { z-index: 290; }
+
+/* ═══════════════════════════════════════════
+   TABLET  (sidebar becomes a drawer)
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .hamburger { display: flex; }
+
+    .sidebar {
+        position: fixed;
+        left: -280px;
+        top: 0;
+        width: 280px;
+        height: 100vh;
+        z-index: 100;
+        transition: left 0.25s ease;
+        background: var(--bg);
+        border-right: 1px solid var(--border);
+        backdrop-filter: none;
+    }
+
+    .sidebar.open { left: 0; }
+    .sidebar-overlay.open { display: block; }
+
+    .msg-row.user .bubble { max-width: 80%; }
+    .bubble-wrapper { max-width: 80%; }
+    .chat-area { padding: 14px; }
+}
+
+/* ═══════════════════════════════════════════
+   PHONE  (≤ 600 px) — full separate layout
+═══════════════════════════════════════════ */
+@media (max-width: 600px) {
+
+    /* Compact top bar — add top safe area for iPhone notch/Dynamic Island */
+    .chat-area {
+        padding: 10px 12px 10px;
+        padding-top: max(10px, env(safe-area-inset-top));
+    }
+    .topbar { margin-bottom: 8px; }
+    .topbar h2 { font-size: 17px; }
+    .topbar-logo { height: 34px; border-radius: 8px; }
+    .page-logo   { width: 160px; }
+    .app-menu-btn { width: 44px; height: 44px; }
+    /* Bottom sheet for app menu on phone too */
+    .app-menu-dropdown {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        border-radius: 20px 20px 0 0;
+        min-width: unset;
+        padding: 0 10px calc(16px + env(safe-area-inset-bottom, 0px));
+        transform: translateY(110%);
+        transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+        display: block !important;
+        z-index: 300;
+    }
+    .app-menu-dropdown::before {
+        content: "";
+        display: block;
+        width: 36px;
+        height: 4px;
+        background: rgba(128,128,128,0.35);
+        border-radius: 2px;
+        margin: 14px auto 10px;
+    }
+    .app-menu-dropdown.open { transform: translateY(0); }
+    .app-menu-item { padding: 14px 12px; font-size: 15px; }
+
+    /* Bubbles take nearly full width */
+    .msg-row.user .bubble { max-width: 88%; }
+    .bubble-wrapper { max-width: 88%; }
+
+    /* Copy button always visible on touch screens (no hover) */
+    .bubble-actions { opacity: 1; }
+
+    /* Smaller avatar */
+    .bot-avatar { width: 28px; height: 28px; font-size: 12px; }
+
+    /* Welcome state */
+    .welcome-logo { width: 52px; height: 52px; font-size: 22px; }
+    .welcome-state h3 { font-size: 17px; }
+    .welcome-state { gap: 12px; }
+
+    /* ── Suggestion pills: single horizontal scroll row ── */
+    .suggestion-pills {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        justify-content: flex-start;
+        padding: 2px 0 10px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        /* fade edges to hint scroll */
+        -webkit-mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+        mask-image: linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+    }
+    .suggestion-pills::-webkit-scrollbar { display: none; }
+    .suggestion-pill {
+        flex-shrink: 0;
+        font-size: 13px;
+        padding: 8px 14px;
+        /* remove lift animation on touch */
+        transform: none !important;
+    }
+
+    /* ── Input box ── */
+    .copilot-input-section {
+        gap: 6px;
+        /* keep above iOS home indicator */
+        padding-bottom: env(safe-area-inset-bottom, 8px);
+    }
+
+    .copilot-input-box {
+        border-radius: 16px;
+        padding: 12px 14px 10px;
+    }
+
+    /* Prevent iOS / Android zoom on focus */
+    #msg { font-size: 16px; }
+
+    /* Larger touch targets */
+    .copilot-attach-btn { width: 40px; height: 40px; }
+    .copilot-send-btn   { width: 40px; height: 40px; }
+    .copilot-model-btn  { min-height: 36px; padding: 6px 12px; font-size: 13px; }
+
+    /* ── Model menu → bottom sheet ── */
+    .model-selector-wrap { position: static; }
+
+    .copilot-model-menu {
+        /* become a full-width bottom sheet */
+        display: block !important;           /* always in DOM for CSS transition */
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        min-width: unset;
+        width: 100%;
+        border-radius: 20px 20px 0 0;
+        padding: 0 12px calc(20px + env(safe-area-inset-bottom, 0px));
+        max-height: 70vh;
+        overflow-y: auto;
+        z-index: 300;
+        box-shadow: 0 -4px 32px rgba(0,0,0,0.18);
+        /* slide in/out */
+        transform: translateY(110%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        /* override absolute positioning */
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+        border-top: 1px solid var(--border);
+    }
+
+    /* Drag handle */
+    .copilot-model-menu::before {
+        content: "";
+        display: block;
+        width: 36px;
+        height: 4px;
+        background: rgba(128,128,128,0.35);
+        border-radius: 2px;
+        margin: 14px auto 10px;
+    }
+
+    .copilot-model-menu.open {
+        transform: translateY(0);
+    }
+
+    /* Bigger tap targets for model options */
+    .model-option { padding: 14px 12px; }
+    .model-option-text strong { font-size: 15px; }
+    .model-option-text small  { font-size: 13px; }
+
+    /* Login / signup / settings container */
+    .container {
+        margin: 16px;
+        padding: 24px 20px;
+    }
+}
+
+/* ── Container (login / signup / settings) ── */
+.container {
+    max-width: 420px;
+    margin: 80px auto;
+    padding: 32px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.container h2 { margin: 0 0 4px; }
+
+.container input {
+    padding: 11px 14px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+}
+
+.container input:focus { border-color: #4a6cf7; }
+
+.container button {
+    padding: 11px;
+    border-radius: 8px;
+    background: #4a6cf7;
+    color: white;
+    border: none;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.container button:hover { background: #3a5ce5; }
+
+/* ── Animations ── */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
