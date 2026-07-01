@@ -706,6 +706,7 @@ async function runDNS() {
             return;
         }
         const TYPE_MAP = {1:'A',2:'NS',5:'CNAME',6:'SOA',15:'MX',16:'TXT',28:'AAAA',33:'SRV',99:'SPF',257:'CAA'};
+        _lastData.dns = { domain, type, records: answers.map(function(rec){ return {type: TYPE_MAP[rec.type]||rec.type, ttl: rec.TTL, value: rec.data}; }) };
         let html = '<div class="tool-card"><table class="dns-table"><thead><tr><th>Type</th><th>TTL</th><th>Value</th></tr></thead><tbody>';
         answers.forEach(function(rec) {
             html += '<tr><td>' + (TYPE_MAP[rec.type] || rec.type) + '</td><td>' + rec.TTL + 's</td><td>' + esc(rec.data) + '</td></tr>';
@@ -719,11 +720,9 @@ async function runDNS() {
 function askDnsAI(btn) {
     const domain = document.getElementById('dnsInput').value.trim();
     const type   = document.getElementById('dnsType').value;
-    const out    = document.getElementById('dnsOut').innerText.trim();
     if (!domain) return;
-    let msg = 'DNS Lookup\nDomain: ' + domain + '\nRecord type: ' + type;
-    if (out) msg += '\n\nResults:\n' + out;
-    msg += '\n\nCan you analyze these DNS records and flag anything suspicious or noteworthy?';
+    let msg = aiCtx('DNS Lookup', {domain, 'record type': type}, _lastData.dns);
+    msg += 'Analyze these DNS records. Flag anything suspicious: unexpected IPs, SPF/DMARC misconfigs, dangling CNAMEs, zone transfer hints, or anything that could aid an attacker.';
     sendToAI(msg, btn);
 }
 
@@ -761,6 +760,7 @@ async function runWHOIS() {
             out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">No data returned.</div>';
             return;
         }
+        _lastData.whois = { target, fields: Object.fromEntries(rows) };
         let html = '<div class="tool-card">';
         rows.forEach(function(row) {
             html += '<div class="whois-row"><span class="whois-key">' + row[0] + '</span><span class="whois-val">' + esc(String(row[1])) + '</span></div>';
@@ -773,11 +773,9 @@ async function runWHOIS() {
 }
 function askWhoisAI(btn) {
     const target = document.getElementById('whoisInput').value.trim();
-    const out    = document.getElementById('whoisOut').innerText.trim();
     if (!target) return;
-    let msg = 'WHOIS/RDAP Lookup\nTarget: ' + target;
-    if (out) msg += '\n\nResults:\n' + out;
-    msg += '\n\nCan you analyze this registration data and flag anything suspicious or of interest?';
+    let msg = aiCtx('WHOIS / RDAP Lookup', {target}, _lastData.whois);
+    msg += 'Analyze this registration data. Note registrar, registration/expiry dates, nameservers, registrant org. Flag: recently registered domains, privacy-masked registrants, suspicious nameservers, or anything relevant to threat intel.';
     sendToAI(msg, btn);
 }
 
@@ -808,6 +806,7 @@ async function runCVE() {
         }
         const sevCls = severity ? ({'CRITICAL':'sev-critical','HIGH':'sev-high','MEDIUM':'sev-medium','LOW':'sev-low'}[severity] || 'sev-none') : 'sev-none';
         const pub = cve.published ? new Date(cve.published).toLocaleDateString() : '—';
+        _lastData.cve = { id: cve.id, score, severity, published: pub, description: desc ? desc.value : null, references: (cve.references||[]).map(function(r){ return r.url; }) };
         const refs = (cve.references || []).slice(0, 6);
         let html = '<div class="tool-card">';
         html += '<div style="font-weight:700;font-size:15px;margin-bottom:10px;">' + cve.id + '</div>';
@@ -833,12 +832,10 @@ async function runCVE() {
     }
 }
 function askCveAI(btn) {
-    const id  = document.getElementById('cveInput').value.trim();
-    const out = document.getElementById('cveOut').innerText.trim();
+    const id = document.getElementById('cveInput').value.trim();
     if (!id) return;
-    let msg = 'CVE Lookup: ' + id;
-    if (out) msg += '\n\nDetails:\n' + out;
-    msg += '\n\nCan you explain this vulnerability, its real-world impact, and how to detect or mitigate it?';
+    let msg = aiCtx('CVE Lookup', {CVE: id}, _lastData.cve);
+    msg += 'Explain this vulnerability in detail: what is the root cause, what systems are affected, what is the real-world impact, are there known exploits in the wild, and what are the detection and mitigation steps?';
     sendToAI(msg, btn);
 }
 
@@ -855,6 +852,7 @@ async function runIP() {
             out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">' + esc(d.message || 'Lookup failed') + '</div>';
             return;
         }
+        _lastData.ip = d;
         const rows = [
             ['IP', d.query], ['Country', d.country + ' (' + d.countryCode + ')'],
             ['Region', d.regionName], ['City', d.city], ['ZIP', d.zip],
@@ -872,11 +870,9 @@ async function runIP() {
     }
 }
 function askIpAI(btn) {
-    const ip  = document.getElementById('ipInput').value.trim() || 'my IP';
-    const out = document.getElementById('ipOut').innerText.trim();
-    let msg = 'IP Lookup\nTarget: ' + ip;
-    if (out) msg += '\n\nResults:\n' + out;
-    msg += '\n\nCan you analyze this IP — is the ASN/org notable, any threat intel, what does this tell us?';
+    const ip = document.getElementById('ipInput').value.trim() || 'my IP';
+    let msg = aiCtx('IP Geolocation & ASN Lookup', {IP: ip}, _lastData.ip);
+    msg += 'Analyze this IP. Is the ASN/org associated with hosting, VPNs, Tor, or known threat infrastructure? Is the geolocation consistent with expected use? Flag anything suspicious and suggest next investigative steps.';
     sendToAI(msg, btn);
 }
 
@@ -898,6 +894,7 @@ async function runSubs() {
             });
         });
         const subs = Array.from(seen).sort();
+        _lastData.subs = { domain, subdomains: subs };
         if (!subs.length) {
             out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">No subdomains found in CT logs.</div>';
             return;
@@ -914,11 +911,9 @@ async function runSubs() {
 }
 function askSubsAI(btn) {
     const domain = document.getElementById('subInput').value.trim();
-    const out    = document.getElementById('subOut').innerText.trim();
     if (!domain) return;
-    let msg = 'Subdomain Finder\nDomain: ' + domain;
-    if (out) msg += '\n\nSubdomains found:\n' + out;
-    msg += '\n\nCan you analyze these subdomains — flag staging envs, admin panels, legacy systems, or interesting attack surface?';
+    let msg = aiCtx('Subdomain Enumeration (CT Logs)', {domain}, _lastData.subs);
+    msg += 'Analyze this full subdomain list. Identify: staging/dev/test environments, admin panels, API endpoints, legacy systems, mail servers, VPN/remote access portals, and anything that looks like unusual or high-value attack surface. Group by category where possible.';
     sendToAI(msg, btn);
 }
 
@@ -1000,9 +995,8 @@ function askPasswordAI(btn) {
     const pw  = document.getElementById('pwInput').value;
     const out = document.getElementById('pwOut').innerText.trim();
     if (!pw) return;
-    let msg = 'Password Analysis\nPassword length: ' + pw.length + ' characters';
-    if (out) msg += '\n\nAnalysis results:\n' + out;
-    msg += '\n\nCan you give me advice on making this stronger and explain the risks at this strength level?';
+    let msg = aiCtx('Password Strength Analyzer', { 'password length': pw.length + ' chars', 'analysis': out || '(not run)'}, null);
+    msg += 'Based on this password analysis, explain: the specific weaknesses, what crack time estimates mean in real attack scenarios, how attackers would approach cracking this (dictionary, rule-based, brute force), and give concrete advice for improving it. Do NOT repeat the actual password.';
     sendToAI(msg, btn);
 }
 
@@ -1011,9 +1005,8 @@ function askBaseAI(btn) {
     const from = document.getElementById('fromBase').value;
     const out  = document.getElementById('baseOut').innerText.trim();
     if (!val) return;
-    let msg = 'Number Base Conversion\nInput: ' + val + ' (base ' + from + ')';
-    if (out) msg += '\n\nConversions:\n' + out;
-    msg += '\n\nCan you explain what this value represents and where these number bases are typically used in computing or security?';
+    let msg = aiCtx('Number Base Converter', { input: val, 'from base': from, conversions: out || '(not run)'}, null);
+    msg += 'Analyze this value from a security perspective: does it look like a port number, IP octet, file offset, shellcode byte, memory address, or any other commonly seen value in security research? Explain where these number bases appear in low-level computing and security work.';
     sendToAI(msg, btn);
 }
 
@@ -1447,9 +1440,9 @@ function askHashAI(btn) {
     const input = document.getElementById('hashInput').value.trim();
     if (!input) return;
     const results = document.getElementById('hashResults').innerText.trim();
-    let msg = `I have this hash:\n${input}`;
-    if (results) msg += `\n\nHash identifier results:\n${results}`;
-    msg += '\n\nCan you tell me more about this hash type, how secure it is, and how to crack or use it?';
+    let msg = aiCtx('Hash Identifier', {hash: input}, null);
+    msg += 'Identified as: ' + (results || 'unknown') + '\n\n';
+    msg += 'Explain this hash type: algorithm, bit length, security status (is it broken/deprecated?), real-world uses, and practical cracking approaches (hashcat modes, rainbow tables, etc.).';
     sendToAI(msg, btn);
 }
 
@@ -1457,25 +1450,19 @@ function askEncAI(btn) {
     const input = document.getElementById('encInput').value.trim();
     if (!input) return;
     const output = document.getElementById('encOutput').textContent.trim();
-    let msg = `I used the ${curEnc.toUpperCase()} encoder/decoder.\n\nInput: ${input}`;
-    if (output) msg += `\nOutput: ${output}`;
-    msg += '\n\nCan you analyze this and help me understand what this data represents?';
+    let msg = aiCtx('Encoder / Decoder', {encoding: curEnc.toUpperCase(), input, output: output || '(not yet run)'}, null);
+    msg += 'Analyze this encoded/decoded data. Explain what the encoding is used for in security contexts, whether the data appears to contain anything sensitive or interesting, and flag anything suspicious.';
     sendToAI(msg, btn);
 }
 
 function askJWTAI(btn) {
     const raw = document.getElementById('jwtInput').value.trim();
     if (!raw) return;
-    let msg = `I'm analyzing this JWT token:\n${raw}`;
     const p = raw.split('.');
-    if (p.length === 3) {
-        try {
-            const hdr = b64url(p[0]), pld = b64url(p[1]);
-            msg += `\n\nDecoded header:\n${JSON.stringify(hdr, null, 2)}`;
-            msg += `\n\nDecoded payload:\n${JSON.stringify(pld, null, 2)}`;
-        } catch (e) {}
-    }
-    msg += '\n\nCan you check this JWT for security issues, weak algorithms, or sensitive data exposure?';
+    let decoded = {};
+    if (p.length === 3) { try { decoded = { header: b64url(p[0]), payload: b64url(p[1]) }; } catch(e) {} }
+    let msg = aiCtx('JWT Analyzer', {'raw token': raw}, decoded);
+    msg += 'Perform a full JWT security audit: check the algorithm (flag none/HS256 with weak keys), look for sensitive data in the payload, check expiry (exp) and issued-at (iat), flag any privilege claims (admin, role, scope), and describe any known attacks applicable to this token configuration.';
     sendToAI(msg, btn);
 }
 
@@ -1483,9 +1470,8 @@ function askCipherAI(btn) {
     const input = document.getElementById('cipherIn').value.trim();
     if (!input) return;
     const output = document.getElementById('cipherOut').textContent.trim();
-    let msg = `I'm working with a ${curCipher} cipher.\n\nInput: ${input}`;
-    if (output) msg += `\nOutput: ${output}`;
-    msg += '\n\nCan you help me analyze or crack this cipher?';
+    let msg = aiCtx('Cipher Tool', {cipher: curCipher, input, output: output || '(not yet run)'}, null);
+    msg += 'Analyze this cipher operation. Explain the cipher\'s security properties, whether it is considered cryptographically secure, common attacks against it, and whether this specific input/output reveals anything interesting from a security perspective.';
     sendToAI(msg, btn);
 }
 
@@ -1495,37 +1481,33 @@ function askHeadersAI(btn) {
     const hdrs = parseHeaders(raw);
     const missing = SEC_HEADERS.filter(h => !hdrs.has(h.name)).map(h => h.label);
     const leaking = LEAKY.filter(h => hdrs.has(h.name)).map(h => `${h.label}: ${hdrs.get(h.name)}`);
-    let msg = `I'm analyzing these HTTP response headers:\n\n${raw}`;
-    if (missing.length) msg += `\n\nMissing security headers: ${missing.join(', ')}`;
-    if (leaking.length) msg += `\n\nLeaking server info: ${leaking.join(', ')}`;
-    msg += '\n\nCan you explain the security risks and tell me how to fix each issue?';
+    const allHeaders = Object.fromEntries([...hdrs.entries()]);
+    let msg = aiCtx('HTTP Header Analyzer', {'raw headers': raw}, { all_headers: allHeaders, missing_security_headers: missing, leaking_server_info: leaking });
+    msg += 'Perform a full HTTP security header audit. For each missing security header explain the attack it prevents and the recommended value. For each leaking header explain what an attacker learns and how to suppress it. Also check the existing headers for misconfigurations (weak CSP, overly permissive CORS, etc.).';
     sendToAI(msg, btn);
 }
 
 function askStringsAI(btn) {
     const text = document.getElementById('strInput').value.trim();
     if (!text) return;
-    const found = [];
+    const extracted = {};
     EXTRACTORS.forEach(e => {
         const matches = [...new Set((text.match(e.rx) || []))];
-        if (matches.length) found.push(`${e.label}: ${matches.slice(0, 5).join(', ')}${matches.length > 5 ? ` (+${matches.length - 5} more)` : ''}`);
+        if (matches.length) extracted[e.label] = matches;
     });
-    let msg = `I extracted the following patterns from a text/binary dump:\n\n${found.join('\n')}`;
-    msg += `\n\nOriginal input (first 500 chars):\n${text.slice(0, 500)}`;
-    msg += '\n\nCan you help me analyze what this data represents and flag anything suspicious?';
+    let msg = aiCtx('Strings Extractor', {'input (first 500 chars)': text.slice(0, 500)}, { extracted_patterns: extracted });
+    msg += 'Analyze the extracted patterns from this data dump. For each category of finding (IPs, URLs, emails, hashes, keys, etc.) explain what it means in context, flag anything suspicious, and suggest next investigative steps (e.g. look up IPs in threat intel, check hashes against VirusTotal, etc.).';
     sendToAI(msg, btn);
 }
 
 function askRxAI(btn) {
-    const pat = document.getElementById('rxPat').value.trim();
+    const pat   = document.getElementById('rxPat').value.trim();
     if (!pat) return;
     const flags = document.getElementById('rxFlags').value;
     const input = document.getElementById('rxInput').value.trim();
     const count = document.getElementById('rxCount').textContent;
-    let msg = `I'm testing this regex: /${pat}/${flags}`;
-    if (input) msg += `\n\nTest string:\n${input}`;
-    if (count) msg += `\n\nResult: ${count}`;
-    msg += '\n\nCan you help me understand or improve this regex?';
+    let msg = aiCtx('Regex Tester', { pattern: `/${pat}/${flags}`, 'test string': input || '(empty)', 'match result': count || '(not run)'}, null);
+    msg += 'Analyze this regex from a security perspective: explain what it matches, flag any edge cases or bypasses an attacker could exploit, suggest improvements for accuracy, and explain common security uses of this pattern (input validation, WAF rules, log analysis, etc.).';
     sendToAI(msg, btn);
 }
 
@@ -1551,6 +1533,7 @@ async function runHashCheck() {
             return;
         }
         var rec = d.data[0];
+        _lastData.hashCheck = { hash, record: rec };
         var html = '<div class="tool-card"><div style="margin-bottom:12px;"><span class="badge low">🚨 MALWARE</span><span style="font-size:13px;margin-left:8px;font-weight:600;">Found in MalwareBazaar</span></div>';
         [['File Name', rec.file_name], ['File Type', rec.file_type],
          ['File Size', rec.file_size ? rec.file_size + ' bytes' : null],
@@ -1595,6 +1578,7 @@ async function runURLCheck() {
         }
         var isOnline  = qs === 'is_online'  || us === 'online';
         var isOffline = qs === 'is_offline' || us === 'offline';
+        _lastData.urlCheck = { url, result: d };
         if (!isOnline && !isOffline) {
             out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">URLhaus returned an unexpected response. Make sure the URL includes http:// or https://.</div>';
             return;
@@ -1623,20 +1607,31 @@ async function runURLCheck() {
 }
 
 function askThreatAI(btn) {
-    var hash    = document.getElementById('threatHashInput').value.trim();
-    var url     = document.getElementById('threatURLInput').value.trim();
-    var hashOut = document.getElementById('threatHashOut').innerText.trim();
-    var urlOut  = document.getElementById('threatURLOut').innerText.trim();
+    var hash = document.getElementById('threatHashInput').value.trim();
+    var url  = document.getElementById('threatURLInput').value.trim();
     if (!hash && !url) return;
-    var msg = 'Threat Intelligence Lookup\n';
-    if (hash) { msg += 'Hash: ' + hash; if (hashOut) msg += '\nResult: ' + hashOut; }
-    if (url)  { msg += '\nURL: ' + url;  if (urlOut)  msg += '\nResult: ' + urlOut; }
-    msg += '\n\nCan you explain this threat, what malware family it likely belongs to, and walk me through containment and remediation steps?';
+    var inputs = {};
+    if (hash) inputs['hash'] = hash;
+    if (url)  inputs['url']  = url;
+    var rawData = {};
+    if (hash && _lastData.hashCheck) rawData.malwarebazaar = _lastData.hashCheck;
+    if (url  && _lastData.urlCheck)  rawData.urlhaus       = _lastData.urlCheck;
+    var msg = aiCtx('Threat Intelligence', inputs, Object.keys(rawData).length ? rawData : null);
+    msg += 'Based on this threat intel data, explain: what malware family or campaign this is associated with, how it behaves on an infected system, what indicators of compromise (IOCs) should defenders look for, and provide step-by-step containment and remediation instructions.';
     sendToAI(msg, btn);
 }
 
 // ══════════════════ FILE SCANNER ══════════════════
 var _scanSummary = [];
+var _lastData = {}; // stores raw API results per tool for AI context
+
+function aiCtx(tool, inputs, rawData) {
+    var lines = ['[Sentaur AI Security Toolkit]', 'Tool: ' + tool, ''];
+    Object.entries(inputs).forEach(function(kv) { if (kv[1]) lines.push('Input ' + kv[0] + ': ' + kv[1]); });
+    if (rawData) lines.push('\nRaw API data:\n' + JSON.stringify(rawData, null, 2));
+    lines.push('');
+    return lines.join('\n');
+}
 
 function fmtBytes(b) {
     if (b < 1024) return b + ' B';
@@ -1737,13 +1732,8 @@ function askScanAI(btn) {
     if (!_scanSummary.length) return;
     var threats = _scanSummary.filter(function(s){ return s.result === 'malware'; });
     var clean   = _scanSummary.filter(function(s){ return s.result === 'clean'; }).length;
-    var msg = 'File Scan Summary\nTotal files scanned: ' + _scanSummary.length
-        + '\nClean: ' + clean + '\nThreats found: ' + threats.length + '\n';
-    if (threats.length) {
-        msg += '\nMalicious files:\n';
-        threats.forEach(function(t){ msg += '- ' + t.name + ' (hash: ' + t.hash.slice(0,16) + '…, sig: ' + (t.sig||'unknown') + ', tags: ' + (t.tags||'—') + ')\n'; });
-    }
-    msg += '\nCan you explain what these threats are, how they may behave on the system, and walk me through containment and removal steps?';
+    var msg = aiCtx('File Scanner (MalwareBazaar)', { 'files scanned': _scanSummary.length, 'clean': clean, 'threats found': threats.length }, { scan_results: _scanSummary });
+    msg += 'Analyze these file scan results. For each malicious file: explain what the malware family does, how it behaves on an infected system, what persistence mechanisms it typically uses, and provide step-by-step containment and remediation instructions. Also advise on what to do with the clean files — do any of the file names or types raise concern even if the hash was not found?';
     sendToAI(msg, btn);
 }
 
