@@ -672,9 +672,9 @@
             </div>
             <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Accessible locations</div>
             <div class="btn-row" style="flex-wrap:wrap;gap:6px;margin-bottom:10px;">
-                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('Downloads')">📁 Downloads</button>
-                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('Desktop')">📁 Desktop</button>
-                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('Documents')">📁 Documents</button>
+                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('downloads')">📁 Downloads</button>
+                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('desktop')">📁 Desktop</button>
+                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('documents')">📁 Documents</button>
             </div>
             <div class="btn-row">
                 <button class="tool-btn" id="fullScanBtn" onclick="startFullScan()">📂 Choose Any Folder</button>
@@ -1918,17 +1918,17 @@ async function* collectFilesFromDir(dirHandle, path, signal) {
     } catch(e) { /* permission denied on system dirs — skip silently */ }
 }
 
-async function startFullScan(hintLabel) {
+async function startFullScan(startIn) {
     if (!window.showDirectoryPicker) {
         document.getElementById('scanResults').innerHTML =
             '<div class="tool-card" style="color:#f87171;font-size:13px;">Folder scan requires Chrome or Edge.</div>';
         return;
     }
-    var lbl0 = document.getElementById('scanProgLbl');
-    if (lbl0 && hintLabel) lbl0.textContent = 'Navigate to ' + hintLabel + ' and click Select Folder…';
     var dirHandle;
     try {
-        dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        var opts = { mode: 'readwrite' };
+        if (startIn) opts.startIn = startIn;
+        dirHandle = await window.showDirectoryPicker(opts);
     } catch(e) {
         if (e.name !== 'AbortError') {
             document.getElementById('scanResults').innerHTML =
