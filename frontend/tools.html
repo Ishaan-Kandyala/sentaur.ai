@@ -664,7 +664,19 @@
     <!-- ══ FILE SCANNER ══ -->
     <div class="tool-panel" id="panel-filescan">
         <div class="tool-card">
-            <div class="tool-label">File Scanner — deep content analysis + MalwareBazaar + VirusTotal</div>
+            <div class="tool-label" style="margin-bottom:6px;">🔍 Full System Scan</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;line-height:1.5;">
+                Pick a folder — choose your <strong>C:\</strong> drive for a full PC scan. Sentaur will recursively find every
+                executable, script, archive &amp; Office file and check each one for malware.<br>
+                <span style="color:#fbbf24;">⚠ Requires Chrome or Edge</span> (Firefox/Safari block filesystem access)
+            </div>
+            <div class="btn-row">
+                <button class="tool-btn" id="fullScanBtn" onclick="startFullScan()">📂 Choose Folder &amp; Scan</button>
+                <button class="tool-btn sec" id="stopScanBtn" onclick="stopScan()" style="display:none;">⏹ Stop</button>
+            </div>
+        </div>
+        <div class="tool-card" style="margin-top:10px;">
+            <div class="tool-label">Drop individual files</div>
             <div class="scan-drop-zone" id="scanDropZone" onclick="document.getElementById('scanFileInput').click()">
                 <div class="scan-drop-icon">🦠</div>
                 <div class="scan-drop-text">Click to select files, or drag &amp; drop here</div>
@@ -1632,6 +1644,7 @@ function askThreatAI(btn) {
 
 // ══════════════════ FILE SCANNER ══════════════════
 var _scanSummary = [];
+var _scanAbortCtrl = null;
 var _lastData = {}; // stores raw API results per tool for AI context
 
 function aiCtx(tool, inputs, rawData) {
@@ -1654,10 +1667,109 @@ async function sha256hex(buffer) {
 }
 
 function clearScan() {
+    if (_scanAbortCtrl) _scanAbortCtrl.abort();
     document.getElementById('scanResults').innerHTML = '';
     document.getElementById('scanProgress').style.display = 'none';
     document.getElementById('scanFileInput').value = '';
+    var sb = document.getElementById('stopScanBtn');
+    if (sb) sb.style.display = 'none';
     _scanSummary = [];
+}
+
+function stopScan() {
+    if (_scanAbortCtrl) _scanAbortCtrl.abort();
+    var sb = document.getElementById('stopScanBtn');
+    if (sb) sb.style.display = 'none';
+    var lbl = document.getElementById('scanProgLbl');
+    if (lbl) lbl.textContent = 'Scan stopped by user.';
+}
+
+async function scanOneFile(file, displayName, idx, out) {
+    var row = document.createElement('div');
+    row.className = 'scan-file-row'; row.id = 'scan-row-' + idx;
+    row.innerHTML = '<span class="scan-file-name" title="' + esc(displayName) + '">' + esc(displayName) + '</span>'
+        + '<span class="scan-file-size">' + fmtBytes(file.size) + '</span>'
+        + '<span class="scan-file-type" id="scan-type-' + idx + '"></span>'
+        + '<span class="scan-file-hash" id="scan-hash-' + idx + '">computing…</span>'
+        + '<span class="scan-status pending" id="scan-st-' + idx + '">⏳</span>';
+    out.appendChild(row);
+    var aDiv = document.createElement('div');
+    aDiv.className = 'scan-analysis'; aDiv.id = 'scan-analysis-' + idx; aDiv.style.display = 'none';
+    out.appendChild(aDiv);
+    row.scrollIntoView({ block: 'nearest' });
+
+    try {
+        var contentP = analyzeFileContent(file);
+        var buf = await file.arrayBuffer();
+        var hash = await sha256hex(buf);
+        document.getElementById('scan-hash-' + idx).textContent = hash.slice(0,16) + '…';
+        var content = await contentP;
+        if (content.magic) document.getElementById('scan-type-' + idx).textContent = content.magic;
+
+        var r = await fetch('/api/tools/hash-check', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hash:hash})});
+        var d = await r.json();
+        var vtData = await checkVirusTotal(hash);
+
+        var st = document.getElementById('scan-st-' + idx);
+        var isMalware = false, mbRec = null;
+        if (d.query_status === 'ok' && d.data && d.data.length) {
+            mbRec = d.data[0]; isMalware = true;
+            st.textContent = '🚨 ' + (mbRec.signature || 'Malware'); st.className = 'scan-status mal';
+            row.style.borderColor = 'rgba(248,113,113,0.4)'; row.style.background = 'rgba(248,113,113,0.04)';
+        } else if (d.query_status === 'hash_not_found') {
+            st.textContent = '✓ MB clean'; st.className = 'scan-status clean';
+        } else {
+            st.textContent = '— unknown'; st.className = 'scan-status pending';
+        }
+
+        var vtSummary = null;
+        if (vtData && !vtData.error && vtData.data && vtData.data.attributes) {
+            var vstats = vtData.data.attributes.last_analysis_stats || {};
+            var vmal = vstats.malicious || 0;
+            var vtot = Object.values(vstats).reduce(function(a,b){return a+b;},0);
+            vtSummary = { malicious: vmal, total: vtot };
+            if (vmal > 0) {
+                isMalware = true;
+                row.style.borderColor = 'rgba(248,113,113,0.4)'; row.style.background = 'rgba(248,113,113,0.04)';
+                st.textContent = '🚨 VT: ' + vmal + '/' + vtot; st.className = 'scan-status mal';
+            } else if (!isMalware) {
+                st.textContent = '✓ Clean (VT 0/' + vtot + ')'; st.className = 'scan-status clean';
+            }
+        }
+
+        var aHtml = '';
+        if (vtSummary) {
+            aHtml += '<div class="scan-finding-cat">VirusTotal</div>'
+                + '<div class="scan-finding-val" style="color:' + (vtSummary.malicious > 0 ? '#f87171' : '#4ade80') + ';margin-bottom:4px;">'
+                + vtSummary.malicious + ' / ' + vtSummary.total + ' engines detected</div>';
+        } else if (vtData && vtData.error === 'not_found') {
+            aHtml += '<div class="scan-finding-cat">VirusTotal</div><div class="scan-finding-val" style="color:var(--text-secondary);margin-bottom:4px;">Not in VT database</div>';
+        } else if (vtData && vtData.error === 'no_key') {
+            aHtml += '<div class="scan-finding-cat">VirusTotal</div><div class="scan-finding-val" style="color:var(--text-secondary);margin-bottom:4px;">Add VIRUSTOTAL_API_KEY for multi-engine scan</div>';
+        }
+        if (mbRec) {
+            aHtml += '<div class="scan-finding-cat">MalwareBazaar</div>'
+                + '<div class="scan-finding-val" style="margin-bottom:4px;">' + esc(mbRec.signature || '')
+                + (mbRec.tags && mbRec.tags.length ? ' · ' + mbRec.tags.join(', ') : '') + '</div>';
+        }
+        Object.keys(content.findings).forEach(function(cat) {
+            aHtml += '<div class="scan-finding-cat">' + esc(cat) + '</div>'
+                + '<div class="scan-finding-val" style="margin-bottom:4px;">' + content.findings[cat].map(esc).join('<br>') + '</div>';
+        });
+        if (aHtml) { aDiv.innerHTML = aHtml; aDiv.style.display = 'block'; }
+
+        var entry = { name: displayName, hash: hash, size: file.size, magic: content.magic,
+            result: isMalware ? 'malware' : (d.query_status === 'hash_not_found' ? 'clean' : 'unknown'),
+            content_findings: content.findings };
+        if (mbRec) { entry.mb_sig = mbRec.signature; entry.mb_tags = mbRec.tags; }
+        if (vtSummary) entry.vt = vtSummary;
+        _scanSummary.push(entry);
+
+    } catch(e) {
+        var st2 = document.getElementById('scan-st-' + idx);
+        if (st2) { st2.textContent = 'error'; st2.className = 'scan-status pending'; }
+        _scanSummary.push({ name: displayName, hash: '', result: 'error', err: e.message });
+    }
 }
 
 // ─── File content analysis ────────────────────────────────────────────────────
@@ -1738,129 +1850,126 @@ async function checkVirusTotal(hash) {
 
 async function startScan(files) {
     if (!files || !files.length) return;
-    var total = files.length;
-    var prog = document.getElementById('scanProgress');
-    var fill = document.getElementById('scanProgFill');
-    var lbl  = document.getElementById('scanProgLbl');
-    var out  = document.getElementById('scanResults');
     if (!window.crypto || !window.crypto.subtle) {
-        out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">File scanner requires a secure (HTTPS) context. Please access the app via HTTPS.</div>';
+        document.getElementById('scanResults').innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">File scanner requires a secure (HTTPS) context.</div>';
         return;
     }
-    prog.style.display = 'block';
-    out.innerHTML = '';
-    _scanSummary = [];
+    var total = files.length;
+    var prog = document.getElementById('scanProgress'), fill = document.getElementById('scanProgFill');
+    var lbl = document.getElementById('scanProgLbl'), out = document.getElementById('scanResults');
+    prog.style.display = 'block'; out.innerHTML = ''; _scanSummary = [];
 
     for (var i = 0; i < total; i++) {
-        var file = files[i];
-        lbl.textContent = 'Scanning ' + (i+1) + ' / ' + total + ': ' + file.name;
+        lbl.textContent = 'Scanning ' + (i+1) + ' / ' + total + ': ' + files[i].name;
         fill.style.width = Math.round((i / total) * 100) + '%';
+        await scanOneFile(files[i], files[i].name, i, out);
+        if (i < total - 1) await new Promise(function(res){ setTimeout(res, 400); });
+    }
+    fill.style.width = '100%';
+    var mal = _scanSummary.filter(function(s){ return s.result === 'malware'; }).length;
+    lbl.textContent = 'Scan complete — ' + total + ' file' + (total>1?'s':'') + ' scanned'
+        + (mal ? ', ' + mal + ' threat' + (mal>1?'s':'') + ' found ⚠' : ', no known threats ✓');
+}
 
-        var rowId = 'scan-row-' + i;
-        var row = document.createElement('div');
-        row.className = 'scan-file-row';
-        row.id = rowId;
-        row.innerHTML = '<span class="scan-file-name" title="' + esc(file.name) + '">' + esc(file.name) + '</span>'
-            + '<span class="scan-file-size">' + fmtBytes(file.size) + '</span>'
-            + '<span class="scan-file-type" id="scan-type-' + i + '"></span>'
-            + '<span class="scan-file-hash" id="scan-hash-' + i + '">computing…</span>'
-            + '<span class="scan-status pending" id="scan-st-' + i + '">⏳</span>';
-        out.appendChild(row);
-        var analysisDiv = document.createElement('div');
-        analysisDiv.className = 'scan-analysis';
-        analysisDiv.id = 'scan-analysis-' + i;
-        analysisDiv.style.display = 'none';
-        out.appendChild(analysisDiv);
+// ── Full system scan (File System Access API — Chrome/Edge only) ──────────────
+var SCAN_EXTENSIONS = new Set([
+    'exe','dll','sys','drv','ocx','scr',
+    'bat','cmd','ps1','psm1','vbs','vbe','js','jse','wsf','wsh','hta',
+    'msi','msp','mst','cab',
+    'jar','class',
+    'py','pyc','pyw',
+    'php','php5',
+    'lnk',
+    'zip','rar','7z',
+    'doc','docm','xls','xlsm','ppt','pptm',
+]);
+var SKIP_DIRS = new Set([
+    '$recycle.bin','system volume information','.git','node_modules',
+    'windows.old','$windows.~bt',
+]);
 
-        try {
-            var contentP = analyzeFileContent(file);
-            var buf  = await file.arrayBuffer();
-            var hash = await sha256hex(buf);
-            document.getElementById('scan-hash-' + i).textContent = hash.slice(0, 16) + '…';
-
-            var content = await contentP;
-            if (content.magic) document.getElementById('scan-type-' + i).textContent = content.magic;
-
-            var r = await fetch('/api/tools/hash-check', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({hash: hash}) });
-            var d = await r.json();
-            var vtData = await checkVirusTotal(hash);
-
-            var st = document.getElementById('scan-st-' + i);
-            var isMalware = false, mbRec = null;
-
-            if (d.query_status === 'ok' && d.data && d.data.length) {
-                mbRec = d.data[0]; isMalware = true;
-                st.textContent = '🚨 ' + (mbRec.signature || 'Malware');
-                st.className = 'scan-status mal';
-                row.style.borderColor = 'rgba(248,113,113,0.4)';
-                row.style.background = 'rgba(248,113,113,0.04)';
-            } else if (d.query_status === 'hash_not_found') {
-                st.textContent = '✓ MB clean'; st.className = 'scan-status clean';
+async function* collectFilesFromDir(dirHandle, path, signal) {
+    try {
+        for await (var entry of dirHandle.values()) {
+            if (signal && signal.aborted) return;
+            var lower = entry.name.toLowerCase();
+            if (entry.kind === 'directory') {
+                if (!SKIP_DIRS.has(lower)) {
+                    yield* collectFilesFromDir(entry, path + entry.name + '\\', signal);
+                }
             } else {
-                st.textContent = '— unknown'; st.className = 'scan-status pending';
-            }
-
-            var vtSummary = null;
-            if (vtData && !vtData.error && vtData.data && vtData.data.attributes) {
-                var vstats = vtData.data.attributes.last_analysis_stats || {};
-                var vmal = vstats.malicious || 0;
-                var vtot = Object.values(vstats).reduce(function(a,b){return a+b;}, 0);
-                vtSummary = { malicious: vmal, total: vtot, stats: vstats };
-                if (vmal > 0) {
-                    isMalware = true;
-                    row.style.borderColor = 'rgba(248,113,113,0.4)';
-                    row.style.background = 'rgba(248,113,113,0.04)';
-                    st.textContent = '🚨 VT: ' + vmal + '/' + vtot;
-                    st.className = 'scan-status mal';
-                } else if (!isMalware) {
-                    st.textContent = '✓ Clean (VT 0/' + vtot + ')';
-                    st.className = 'scan-status clean';
+                var ext = lower.includes('.') ? lower.split('.').pop() : '';
+                if (SCAN_EXTENSIONS.has(ext) && entry.size < 150 * 1024 * 1024) {
+                    yield { handle: entry, fullPath: path + entry.name, ext: ext };
                 }
             }
-
-            var aHtml = '';
-            if (vtSummary) {
-                var vtC = vtSummary.malicious > 0 ? '#f87171' : '#4ade80';
-                aHtml += '<div class="scan-finding-cat">VirusTotal</div>'
-                    + '<div class="scan-finding-val" style="color:' + vtC + ';margin-bottom:4px;">'
-                    + vtSummary.malicious + ' / ' + vtSummary.total + ' engines detected this file</div>';
-            } else if (vtData && vtData.error === 'not_found') {
-                aHtml += '<div class="scan-finding-cat">VirusTotal</div><div class="scan-finding-val" style="color:var(--text-secondary);margin-bottom:4px;">Hash not in VT database (new or rare file)</div>';
-            } else if (vtData && vtData.error === 'no_key') {
-                aHtml += '<div class="scan-finding-cat">VirusTotal</div><div class="scan-finding-val" style="color:var(--text-secondary);margin-bottom:4px;">Add VIRUSTOTAL_API_KEY for multi-engine scanning</div>';
-            }
-            if (mbRec) {
-                aHtml += '<div class="scan-finding-cat">MalwareBazaar</div>'
-                    + '<div class="scan-finding-val" style="margin-bottom:4px;">' + esc(mbRec.signature || '')
-                    + (mbRec.tags && mbRec.tags.length ? ' · ' + mbRec.tags.join(', ') : '') + '</div>';
-            }
-            Object.keys(content.findings).forEach(function(cat) {
-                aHtml += '<div class="scan-finding-cat">' + esc(cat) + '</div>'
-                    + '<div class="scan-finding-val" style="margin-bottom:4px;">'
-                    + content.findings[cat].map(esc).join('<br>') + '</div>';
-            });
-            if (aHtml) { analysisDiv.innerHTML = aHtml; analysisDiv.style.display = 'block'; }
-
-            var entry = { name: file.name, hash: hash, size: file.size, magic: content.magic,
-                result: isMalware ? 'malware' : (d.query_status === 'hash_not_found' ? 'clean' : 'unknown'),
-                content_findings: content.findings };
-            if (mbRec) { entry.mb_sig = mbRec.signature; entry.mb_tags = mbRec.tags; }
-            if (vtSummary) entry.vt = vtSummary;
-            _scanSummary.push(entry);
-
-        } catch(e) {
-            var st2 = document.getElementById('scan-st-' + i);
-            if (st2) { st2.textContent = 'error'; st2.className = 'scan-status pending'; }
-            _scanSummary.push({ name: file.name, hash: '', result: 'error', err: e.message });
         }
+    } catch(e) { /* permission denied on system dirs — skip silently */ }
+}
 
-        if (i < total - 1) await new Promise(function(res){ setTimeout(res, 400); });
+async function startFullScan() {
+    if (!window.showDirectoryPicker) {
+        document.getElementById('scanResults').innerHTML =
+            '<div class="tool-card" style="color:#f87171;font-size:13px;">Full scan requires Chrome or Edge — Firefox and Safari block filesystem access.</div>';
+        return;
+    }
+    var dirHandle;
+    try {
+        dirHandle = await window.showDirectoryPicker({ mode: 'read' });
+    } catch(e) {
+        if (e.name !== 'AbortError') {
+            document.getElementById('scanResults').innerHTML =
+                '<div class="tool-card" style="color:#f87171;font-size:13px;">Could not open folder: ' + esc(e.message) + '</div>';
+        }
+        return;
+    }
+
+    _scanAbortCtrl = new AbortController();
+    var signal = _scanAbortCtrl.signal;
+    _scanSummary = [];
+    var prog = document.getElementById('scanProgress'), fill = document.getElementById('scanProgFill');
+    var lbl = document.getElementById('scanProgLbl'), out = document.getElementById('scanResults');
+    var stopBtn = document.getElementById('stopScanBtn');
+    prog.style.display = 'block'; out.innerHTML = '';
+    if (stopBtn) stopBtn.style.display = 'inline-block';
+
+    // Phase 1 — enumerate
+    lbl.textContent = 'Enumerating files in ' + dirHandle.name + '…';
+    fill.style.width = '2%';
+    var fileList = [];
+    for await (var item of collectFilesFromDir(dirHandle, dirHandle.name + '\\', signal)) {
+        if (signal.aborted) break;
+        fileList.push(item);
+        if (fileList.length % 50 === 0) lbl.textContent = 'Found ' + fileList.length + ' scannable files…';
+    }
+    if (signal.aborted) {
+        lbl.textContent = 'Scan stopped.';
+        if (stopBtn) stopBtn.style.display = 'none';
+        return;
+    }
+
+    // Phase 2 — scan each file
+    var total = fileList.length;
+    lbl.textContent = 'Scanning ' + total + ' files (EXE, DLL, scripts, archives…)';
+    for (var i = 0; i < total; i++) {
+        if (signal.aborted) break;
+        fill.style.width = Math.round(((i+1) / total) * 100) + '%';
+        lbl.textContent = 'Scanning ' + (i+1) + '/' + total + ': ' + fileList[i].fullPath;
+        try {
+            var file = await fileList[i].handle.getFile();
+            await scanOneFile(file, fileList[i].fullPath, i, out);
+        } catch(e) {
+            _scanSummary.push({ name: fileList[i].fullPath, hash: '', result: 'error', err: e.message });
+        }
+        if (i < total - 1) await new Promise(function(res){ setTimeout(res, 300); });
     }
 
     fill.style.width = '100%';
-    var malCount = _scanSummary.filter(function(s){ return s.result === 'malware'; }).length;
-    lbl.textContent = 'Scan complete — ' + total + ' file' + (total>1?'s':'') + ' scanned'
-        + (malCount ? ', ' + malCount + ' threat' + (malCount>1?'s':'') + ' found ⚠' : ', no known threats ✓');
+    if (stopBtn) stopBtn.style.display = 'none';
+    var mal = _scanSummary.filter(function(s){ return s.result === 'malware'; }).length;
+    var stopped = signal.aborted ? ' (stopped early)' : '';
+    lbl.textContent = 'Scan complete' + stopped + ' — ' + _scanSummary.length + ' files scanned'
+        + (mal ? ', ' + mal + ' threat' + (mal>1?'s':'') + ' found ⚠' : ', no known threats ✓');
 }
 
 function askScanAI(btn) {
