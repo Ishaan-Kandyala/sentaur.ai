@@ -336,6 +336,7 @@
         <button class="tool-tab"        data-tab="password" onclick="switchTab('password',this)">🔒 Password</button>
         <button class="tool-tab"        data-tab="baseconv" onclick="switchTab('baseconv',this)">⬡ Base Conv</button>
         <button class="tool-tab"        data-tab="threatintel" onclick="switchTab('threatintel',this)">☣ Threat Intel</button>
+        <button class="tool-tab"        data-tab="filescan"   onclick="switchTab('filescan',this)">🦠 File Scanner</button>
     </div>
 
     <!-- ══ HASH IDENTIFIER ══ -->
@@ -658,11 +659,14 @@
             </div>
         </div>
         <div id="threatURLOut"></div>
+    </div>
 
-        <div class="tool-card" style="margin-top:14px;">
+    <!-- ══ FILE SCANNER ══ -->
+    <div class="tool-panel" id="panel-filescan">
+        <div class="tool-card">
             <div class="tool-label">File Scanner — deep content analysis + MalwareBazaar + VirusTotal</div>
             <div class="scan-drop-zone" id="scanDropZone" onclick="document.getElementById('scanFileInput').click()">
-                <div class="scan-drop-icon">📂</div>
+                <div class="scan-drop-icon">🦠</div>
                 <div class="scan-drop-text">Click to select files, or drag &amp; drop here</div>
                 <div class="scan-drop-sub">Magic bytes, string extraction &amp; pattern analysis run locally — only SHA-256 hashes are sent to APIs</div>
             </div>
