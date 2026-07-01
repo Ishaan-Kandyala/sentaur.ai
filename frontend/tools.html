@@ -1592,7 +1592,8 @@ async function runURLCheck() {
         var isOnline  = qs === 'is_online'  || us === 'online';
         var isOffline = qs === 'is_offline' || us === 'offline';
         if (!isOnline && !isOffline) {
-            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Could not determine status from URLhaus (raw: ' + esc(qs || us || 'no status returned') + '). Make sure the URL includes http:// or https://.</div>';
+            var debug = d._raw_keys ? ' Keys returned: ' + esc(d._raw_keys.join(', ')) : (d._raw ? ' Raw: ' + esc(d._raw) : '');
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Could not determine status from URLhaus.' + debug + '</div>';
             return;
         }
         var html = '<div class="tool-card"><div style="margin-bottom:12px;">'

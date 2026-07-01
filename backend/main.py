@@ -355,8 +355,16 @@ async def proxy_url_check(request: Request):
             data={"url": url_val},
             timeout=12,
         )
-        return resp.json()
-    except Exception:
+        print(f"URLhaus status={resp.status_code} body={resp.text[:500]}")
+        try:
+            data = resp.json()
+        except Exception:
+            return {"query_status": "error", "_raw": resp.text[:200]}
+        if not data.get("query_status") and not data.get("url_status"):
+            data["_raw_keys"] = list(data.keys())
+        return data
+    except Exception as e:
+        print(f"URLhaus request error: {e}")
         return {"query_status": "error"}
 
 
