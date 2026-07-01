@@ -702,7 +702,7 @@ function switchTab(name, btn) {
     btn.classList.add('active');
     document.querySelectorAll('.tool-panel').forEach(p => p.classList.remove('active'));
     document.getElementById('panel-' + name).classList.add('active');
-    const hideScroll = name === 'regex' || name === 'threatintel' || name === 'filescan';
+    const hideScroll = name === 'regex' || name === 'threatintel' || name === 'filescan' || name === 'cipher';
     document.body.classList.toggle('hide-scrollbar', hideScroll);
     document.documentElement.classList.toggle('hide-scrollbar', hideScroll);
 }
