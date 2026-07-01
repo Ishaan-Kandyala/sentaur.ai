@@ -1592,8 +1592,8 @@ async function runURLCheck() {
         var isOnline  = qs === 'is_online'  || us === 'online';
         var isOffline = qs === 'is_offline' || us === 'offline';
         if (!isOnline && !isOffline) {
-            var debug = d._raw_keys ? ' Keys returned: ' + esc(d._raw_keys.join(', ')) : (d._raw ? ' Raw: ' + esc(d._raw) : '');
-            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Could not determine status from URLhaus.' + debug + '</div>';
+            var errMsg = d.error ? esc(String(d.error)) : (d._raw_keys ? 'keys: ' + esc(d._raw_keys.join(', ')) : 'no status returned');
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">URLhaus: ' + errMsg + '</div>';
             return;
         }
         var html = '<div class="tool-card"><div style="margin-bottom:12px;">'

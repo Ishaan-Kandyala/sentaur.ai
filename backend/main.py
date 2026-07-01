@@ -353,6 +353,7 @@ async def proxy_url_check(request: Request):
         resp = _requests.post(
             "https://urlhaus-api.abuse.ch/v1/url/",
             data={"url": url_val},
+            headers={"User-Agent": "SentaurAI-SecurityTools/1.0"},
             timeout=12,
         )
         print(f"URLhaus status={resp.status_code} body={resp.text[:500]}")
