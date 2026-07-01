@@ -664,15 +664,27 @@
     <!-- ══ FILE SCANNER ══ -->
     <div class="tool-panel" id="panel-filescan">
         <div class="tool-card">
-            <div class="tool-label" style="margin-bottom:6px;">🔍 Full System Scan</div>
-            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;line-height:1.5;">
-                Pick a folder — choose your <strong>C:\</strong> drive for a full PC scan. Sentaur will recursively find every
-                executable, script, archive &amp; Office file and check each one for malware.<br>
-                <span style="color:#fbbf24;">⚠ Requires Chrome or Edge</span> (Firefox/Safari block filesystem access)
+            <div class="tool-label" style="margin-bottom:6px;">🔍 Folder Scanner</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;line-height:1.6;">
+                Browsers block access to C:\ root and Windows system folders directly — pick a specific folder instead.
+                Click any shortcut below to scan that location, or use the folder picker.<br>
+                <span style="color:#fbbf24;">⚠ Chrome or Edge only</span>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">High-risk locations</div>
+            <div class="btn-row" style="flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('AppData\\Roaming')">📁 AppData\Roaming</button>
+                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('AppData\\Local\\Temp')">📁 Temp</button>
+                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('Downloads')">📁 Downloads</button>
+                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('Desktop')">📁 Desktop</button>
+                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('AppData\\Local')">📁 AppData\Local</button>
+                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup')">📁 Startup</button>
             </div>
             <div class="btn-row">
-                <button class="tool-btn" id="fullScanBtn" onclick="startFullScan()">📂 Choose Folder &amp; Scan</button>
+                <button class="tool-btn" id="fullScanBtn" onclick="startFullScan()">📂 Choose Any Folder</button>
                 <button class="tool-btn sec" id="stopScanBtn" onclick="stopScan()" style="display:none;">⏹ Stop</button>
+            </div>
+            <div style="font-size:10px;color:var(--text-secondary);margin-top:8px;">
+                Tip: scan multiple folders — results accumulate. Click "Clear Results" to reset.
             </div>
         </div>
         <div class="tool-card" style="margin-top:10px;">
@@ -1908,12 +1920,14 @@ async function* collectFilesFromDir(dirHandle, path, signal) {
     } catch(e) { /* permission denied on system dirs — skip silently */ }
 }
 
-async function startFullScan() {
+async function startFullScan(hintLabel) {
     if (!window.showDirectoryPicker) {
         document.getElementById('scanResults').innerHTML =
-            '<div class="tool-card" style="color:#f87171;font-size:13px;">Full scan requires Chrome or Edge — Firefox and Safari block filesystem access.</div>';
+            '<div class="tool-card" style="color:#f87171;font-size:13px;">Folder scan requires Chrome or Edge.</div>';
         return;
     }
+    var lbl0 = document.getElementById('scanProgLbl');
+    if (lbl0 && hintLabel) lbl0.textContent = 'Navigate to ' + hintLabel + ' and click Select Folder…';
     var dirHandle;
     try {
         dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
@@ -1927,11 +1941,12 @@ async function startFullScan() {
 
     _scanAbortCtrl = new AbortController();
     var signal = _scanAbortCtrl.signal;
-    _scanSummary = [];
     var prog = document.getElementById('scanProgress'), fill = document.getElementById('scanProgFill');
     var lbl = document.getElementById('scanProgLbl'), out = document.getElementById('scanResults');
     var stopBtn = document.getElementById('stopScanBtn');
-    prog.style.display = 'block'; out.innerHTML = '';
+    prog.style.display = 'block';
+    // accumulate results across multiple folder scans; don't wipe previous results
+    var idxOffset = out.children.length / 2; // each file = row + analysisDiv
     if (stopBtn) stopBtn.style.display = 'inline-block';
 
     // Phase 1 — enumerate
@@ -1951,21 +1966,22 @@ async function startFullScan() {
 
     // Phase 2 — scan each file
     var total = fileList.length;
-    lbl.textContent = 'Scanning ' + total + ' files (EXE, DLL, scripts, archives…)';
+    lbl.textContent = 'Scanning ' + total + ' files in ' + dirHandle.name + '…';
     for (var i = 0; i < total; i++) {
         if (signal.aborted) break;
+        var idx = idxOffset + i;
         fill.style.width = Math.round(((i+1) / total) * 100) + '%';
         lbl.textContent = 'Scanning ' + (i+1) + '/' + total + ': ' + fileList[i].fullPath;
         var prevLen = _scanSummary.length;
         try {
             var file = await fileList[i].handle.getFile();
-            await scanOneFile(file, fileList[i].fullPath, i, out);
+            await scanOneFile(file, fileList[i].fullPath, idx, out);
         } catch(e) {
             _scanSummary.push({ name: fileList[i].fullPath, hash: '', result: 'error', err: e.message });
         }
         // Add delete button for confirmed malware
         if (_scanSummary.length > prevLen && _scanSummary[_scanSummary.length - 1].result === 'malware') {
-            addDeleteButton(fileList[i].parentHandle, fileList[i].name, i);
+            addDeleteButton(fileList[i].parentHandle, fileList[i].name, idx);
         }
         if (i < total - 1) await new Promise(function(res){ setTimeout(res, 300); });
     }
