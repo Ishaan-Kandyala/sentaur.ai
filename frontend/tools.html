@@ -665,26 +665,24 @@
     <div class="tool-panel" id="panel-filescan">
         <div class="tool-card">
             <div class="tool-label" style="margin-bottom:6px;">🔍 Folder Scanner</div>
-            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;line-height:1.6;">
-                Browsers block access to C:\ root and Windows system folders directly — pick a specific folder instead.
-                Click any shortcut below to scan that location, or use the folder picker.<br>
-                <span style="color:#fbbf24;">⚠ Chrome or Edge only</span>
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;line-height:1.6;">
+                Pick a folder to scan recursively for malware. Sentaur checks every EXE, DLL, script, archive and Office file it finds.<br>
+                <span style="color:#fbbf24;">⚠ Chrome / Edge only &nbsp;·&nbsp;</span>
+                <span style="color:var(--text-secondary);">AppData, Temp &amp; Windows folders are blocked by the browser — use the drop zone below to scan individual files from those locations instead.</span>
             </div>
-            <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">High-risk locations</div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Accessible locations</div>
             <div class="btn-row" style="flex-wrap:wrap;gap:6px;margin-bottom:10px;">
-                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('AppData\\Roaming')">📁 AppData\Roaming</button>
-                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('AppData\\Local\\Temp')">📁 Temp</button>
                 <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('Downloads')">📁 Downloads</button>
                 <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('Desktop')">📁 Desktop</button>
-                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('AppData\\Local')">📁 AppData\Local</button>
-                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup')">📁 Startup</button>
+                <button class="tool-btn sec" style="font-size:11px;padding:5px 10px;" onclick="startFullScan('Documents')">📁 Documents</button>
             </div>
             <div class="btn-row">
                 <button class="tool-btn" id="fullScanBtn" onclick="startFullScan()">📂 Choose Any Folder</button>
                 <button class="tool-btn sec" id="stopScanBtn" onclick="stopScan()" style="display:none;">⏹ Stop</button>
             </div>
-            <div style="font-size:10px;color:var(--text-secondary);margin-top:8px;">
-                Tip: scan multiple folders — results accumulate. Click "Clear Results" to reset.
+            <div style="font-size:10px;color:var(--text-secondary);margin-top:8px;line-height:1.5;">
+                For AppData / Temp / Startup files: navigate there in Explorer, copy the suspicious file to Desktop, then drag it into the drop zone below.<br>
+                For deep system scanning use <strong>Windows Defender</strong> (built-in) or <strong>Malwarebytes Free</strong>.
             </div>
         </div>
         <div class="tool-card" style="margin-top:10px;">
