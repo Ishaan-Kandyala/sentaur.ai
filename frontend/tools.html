@@ -66,7 +66,17 @@
         html.dark { background: #111827; color: #e8edf5; }
         html.dark body { background: #111827 !important; color: #e8edf5 !important; }
         html.dark .tool-card { background: #1e2d42 !important; border-color: rgba(255,255,255,0.1) !important; }
-        html.dark .tool-input, html.dark select.short-input, html.dark input.short-input { color: #e8edf5 !important; background: #0d1520 !important; border-color: rgba(255,255,255,0.15) !important; }
+        html.dark .tool-input, html.dark select.short-input, html.dark input.short-input { color: #e8edf5 !important; background: #0d1520 !important; border-color: rgba(255,255,255,0.15) !important; color-scheme: dark; }
+        html.dark input.tool-input:-webkit-autofill,
+        html.dark input.tool-input:-webkit-autofill:hover,
+        html.dark input.tool-input:-webkit-autofill:focus,
+        html.dark input.short-input:-webkit-autofill,
+        html.dark input.short-input:-webkit-autofill:hover,
+        html.dark input.short-input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px #0d1520 inset !important;
+            -webkit-text-fill-color: #e8edf5 !important;
+            caret-color: #e8edf5 !important;
+        }
         html.dark .tool-output { color: #e8edf5 !important; background: #111827 !important; border-color: rgba(255,255,255,0.1) !important; }
         html.dark .tool-btn.sec { background: rgba(255,255,255,0.08) !important; color: #e8edf5 !important; border-color: rgba(255,255,255,0.12) !important; }
         html.dark .copy-btn { color: #94a3b8 !important; border-color: rgba(255,255,255,0.15) !important; }

@@ -1135,6 +1135,13 @@ body.dark .container input {
     background: #111827;
     border-color: rgba(255,255,255,0.12);
     color: var(--text);
+    color-scheme: dark;
+}
+body.dark .container input:-webkit-autofill,
+body.dark .container input:-webkit-autofill:hover,
+body.dark .container input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px #111827 inset !important;
+    -webkit-text-fill-color: var(--text) !important;
 }
 
 body.dark .container input::placeholder { color: #4a5a70; }
