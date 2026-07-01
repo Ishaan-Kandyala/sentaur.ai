@@ -1138,7 +1138,7 @@ body.dark .container input {
 body.dark .container input::placeholder { color: #4a5a70; }
 body.dark .container input:focus { border-color: #4a6cf7; }
 
-body.dark .container a { color: #7a9bff; }
+body.dark .container a:not(.oauth-btn) { color: #7a9bff; }
 
 body.dark .oauth-btn:not(.github) {
     background: #1e2a3a;
