@@ -1587,7 +1587,16 @@ async function runURLCheck() {
             out.innerHTML = '<div class="tool-card"><span class="badge ok">✓ Clean</span> <span style="font-size:13px;margin-left:6px;">Not found in URLhaus — no known malware distribution.</span></div>';
             return;
         }
-        var html = '<div class="tool-card"><div style="margin-bottom:12px;"><span class="badge low">🚨 MALICIOUS</span><span style="font-size:13px;margin-left:8px;font-weight:600;">Found in URLhaus</span></div>';
+        if (d.query_status !== 'is_online' && d.query_status !== 'is_offline') {
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Unexpected response from URLhaus (status: ' + esc(String(d.query_status || 'unknown')) + '). Try including the full URL with http:// or https://.</div>';
+            return;
+        }
+        var isOffline = d.query_status === 'is_offline';
+        var html = '<div class="tool-card"><div style="margin-bottom:12px;">'
+            + (isOffline
+                ? '<span class="badge med">⚠ Previously Malicious</span><span style="font-size:13px;margin-left:8px;font-weight:600;">Found in URLhaus (now offline)</span>'
+                : '<span class="badge low">🚨 MALICIOUS</span><span style="font-size:13px;margin-left:8px;font-weight:600;">Found in URLhaus</span>')
+            + '</div>';
         [['Threat', d.threat], ['Status', d.url_status], ['Host', d.host],
          ['Reported', d.date_added], ['Tags', d.tags ? d.tags.join(', ') : null]
         ].forEach(function(f) {
@@ -1598,7 +1607,8 @@ async function runURLCheck() {
             var ps = payloads.slice(0, 3).map(function(p){ return esc(p.signature || 'unknown') + ' (' + esc(p.file_type || '?') + ')'; }).join(', ');
             html += '<div class="threat-row"><span class="threat-key">Payloads</span><span class="threat-val">' + ps + '</span></div>';
         }
-        html += '<div class="pw-warn" style="margin-top:10px;">⚠ Block this URL/host at firewall and DNS. If already clicked, isolate machine and scan for dropped payloads.</div></div>';
+        if (!isOffline) html += '<div class="pw-warn" style="margin-top:10px;">⚠ Block this URL/host at firewall and DNS. If already clicked, isolate machine and scan for dropped payloads.</div>';
+        html += '</div>';
         out.innerHTML = html;
     } catch(e) {
         out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">Request failed: ' + esc(e.message) + '</div>';
