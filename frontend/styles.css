@@ -278,7 +278,9 @@ body.dark .ami-toggle::after { left: 17px; }
     padding-right: 6px;
     display: flex;
     flex-direction: column;
+    scrollbar-width: none;
 }
+.chatbox::-webkit-scrollbar { display: none; }
 
 /* ── Welcome State ── */
 .welcome-state {
