@@ -1124,7 +1124,14 @@ function runEnc(dir) {
     const s = document.getElementById('encInput').value;
     let o = '';
     try {
-        if (curEnc==='base64') o = dir==='encode' ? btoa(unescape(encodeURIComponent(s))) : decodeURIComponent(escape(atob(s)));
+        if (curEnc==='base64') {
+            if (dir==='encode') {
+                o = btoa(unescape(encodeURIComponent(s)));
+            } else {
+                const raw = atob(s);
+                try { o = decodeURIComponent(escape(raw)); } catch { o = raw; }
+            }
+        }
         else if (curEnc==='hex') {
             o = dir==='encode'
                 ? Array.from(s).map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join('')
