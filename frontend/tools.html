@@ -1585,6 +1585,10 @@ async function runURLCheck() {
         var d = await r.json();
         var qs = d.query_status || '';
         var us = d.url_status || '';
+        if (qs === 'no_key') {
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">URL check requires a free URLhaus API key. Register at <a href="https://urlhaus.abuse.ch/api/" target="_blank" style="color:var(--accent)">urlhaus.abuse.ch/api</a> and add <code>URLHAUS_API_KEY=your_key</code> to your .env file.</div>';
+            return;
+        }
         if (qs === 'no_results') {
             out.innerHTML = '<div class="tool-card"><span class="badge ok">✓ Clean</span> <span style="font-size:13px;margin-left:6px;">Not found in URLhaus — no known malware distribution.</span></div>';
             return;
@@ -1592,8 +1596,7 @@ async function runURLCheck() {
         var isOnline  = qs === 'is_online'  || us === 'online';
         var isOffline = qs === 'is_offline' || us === 'offline';
         if (!isOnline && !isOffline) {
-            var errMsg = d.error ? esc(String(d.error)) : (d._raw_keys ? 'keys: ' + esc(d._raw_keys.join(', ')) : 'no status returned');
-            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">URLhaus: ' + errMsg + '</div>';
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">URLhaus returned an unexpected response. Make sure the URL includes http:// or https://.</div>';
             return;
         }
         var html = '<div class="tool-card"><div style="margin-bottom:12px;">'

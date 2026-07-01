@@ -349,21 +349,17 @@ async def proxy_url_check(request: Request):
     url_val = (body.get("url") or "").strip()
     if not url_val:
         return {"query_status": "error"}
+    api_key = os.getenv("URLHAUS_API_KEY", "")
+    if not api_key:
+        return {"query_status": "no_key"}
     try:
         resp = _requests.post(
             "https://urlhaus-api.abuse.ch/v1/url/",
             data={"url": url_val},
-            headers={"User-Agent": "SentaurAI-SecurityTools/1.0"},
+            headers={"Auth-Key": api_key, "User-Agent": "SentaurAI-SecurityTools/1.0"},
             timeout=12,
         )
-        print(f"URLhaus status={resp.status_code} body={resp.text[:500]}")
-        try:
-            data = resp.json()
-        except Exception:
-            return {"query_status": "error", "_raw": resp.text[:200]}
-        if not data.get("query_status") and not data.get("url_status"):
-            data["_raw_keys"] = list(data.keys())
-        return data
+        return resp.json()
     except Exception as e:
         print(f"URLhaus request error: {e}")
         return {"query_status": "error"}
