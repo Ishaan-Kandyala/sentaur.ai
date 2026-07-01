@@ -186,6 +186,9 @@
                     <button class="app-menu-item ami-sub" onclick="openTool('fp-threatintel','threatintel')">
                         <span class="ami-icon">☣</span> Threat Intel
                     </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-filescan','filescan')">
+                        <span class="ami-icon">🦠</span> File Scanner
+                    </button>
                     <div class="ami-section-label">Preferences</div>
                     <button class="app-menu-item ami-sub" id="darkModeItem" onclick="toggleDarkMode(); updateDarkModeItem()">
                         <span class="ami-icon" id="darkModeIcon">🌙</span>
@@ -389,6 +392,11 @@
     <div class="fp-body"><iframe src="tools.html#threatintel" title="Threat Intel" loading="lazy"></iframe></div>
 </div>
 
+<div class="float-panel fp-tool-panel" id="fp-filescan" style="top:385px;left:590px">
+    <div class="fp-hdr"><span class="fp-title">File Scanner</span><button class="fp-close" onclick="fpClose('fp-filescan')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#filescan" title="File Scanner" loading="lazy"></iframe></div>
+</div>
+
 <script src="script.js"></script>
 <script>
 (function () {
@@ -517,7 +525,8 @@
         'fp-headers': '🛡️ Headers', 'fp-strings': '🔎 Strings',
         'fp-dns': '🌐 DNS', 'fp-whois': '📋 WHOIS', 'fp-cve': '🐛 CVE',
         'fp-ip': '🌍 IP', 'fp-subdomains': '🔭 Subdomains', 'fp-password': '🔒 Password', 'fp-baseconv': '⬡ Base',
-        'fp-threatintel': '☣ Threat Intel'
+        'fp-threatintel': '☣ Threat Intel',
+        'fp-filescan': '🦠 File Scanner'
     };
 
     function getOverlapTarget(draggingEl, cx, cy) {
