@@ -1899,8 +1899,9 @@ async function* collectFilesFromDir(dirHandle, path, signal) {
                 }
             } else {
                 var ext = lower.includes('.') ? lower.split('.').pop() : '';
-                if (SCAN_EXTENSIONS.has(ext) && entry.size < 150 * 1024 * 1024) {
-                    yield { handle: entry, fullPath: path + entry.name, ext: ext };
+                if (SCAN_EXTENSIONS.has(ext)) {
+                    // parentHandle needed for deletion later
+                    yield { handle: entry, parentHandle: dirHandle, name: entry.name, fullPath: path + entry.name, ext: ext };
                 }
             }
         }
@@ -1915,7 +1916,7 @@ async function startFullScan() {
     }
     var dirHandle;
     try {
-        dirHandle = await window.showDirectoryPicker({ mode: 'read' });
+        dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
     } catch(e) {
         if (e.name !== 'AbortError') {
             document.getElementById('scanResults').innerHTML =
@@ -1955,11 +1956,16 @@ async function startFullScan() {
         if (signal.aborted) break;
         fill.style.width = Math.round(((i+1) / total) * 100) + '%';
         lbl.textContent = 'Scanning ' + (i+1) + '/' + total + ': ' + fileList[i].fullPath;
+        var prevLen = _scanSummary.length;
         try {
             var file = await fileList[i].handle.getFile();
             await scanOneFile(file, fileList[i].fullPath, i, out);
         } catch(e) {
             _scanSummary.push({ name: fileList[i].fullPath, hash: '', result: 'error', err: e.message });
+        }
+        // Add delete button for confirmed malware
+        if (_scanSummary.length > prevLen && _scanSummary[_scanSummary.length - 1].result === 'malware') {
+            addDeleteButton(fileList[i].parentHandle, fileList[i].name, i);
         }
         if (i < total - 1) await new Promise(function(res){ setTimeout(res, 300); });
     }
@@ -1970,6 +1976,35 @@ async function startFullScan() {
     var stopped = signal.aborted ? ' (stopped early)' : '';
     lbl.textContent = 'Scan complete' + stopped + ' — ' + _scanSummary.length + ' files scanned'
         + (mal ? ', ' + mal + ' threat' + (mal>1?'s':'') + ' found ⚠' : ', no known threats ✓');
+}
+
+function addDeleteButton(parentHandle, filename, idx) {
+    var aDiv = document.getElementById('scan-analysis-' + idx);
+    if (!aDiv) return;
+    var btn = document.createElement('button');
+    btn.id = 'del-btn-' + idx;
+    btn.style.cssText = 'margin-top:8px;padding:5px 12px;font-size:11px;font-weight:700;background:#ef4444;color:#fff;border:none;border-radius:5px;cursor:pointer;';
+    btn.textContent = '🗑 Delete This File';
+    btn.onclick = function() { deleteScannedFile(parentHandle, filename, idx, btn); };
+    aDiv.appendChild(btn);
+    aDiv.style.display = 'block';
+}
+
+async function deleteScannedFile(parentHandle, filename, idx, btn) {
+    if (!confirm('Permanently delete "' + filename + '"?\n\nThis cannot be undone. Only proceed if you are certain this is malware.')) return;
+    try {
+        await parentHandle.removeEntry(filename);
+        btn.textContent = '✓ Deleted';
+        btn.disabled = true;
+        btn.style.background = '#374151';
+        var row = document.getElementById('scan-row-' + idx);
+        if (row) { row.style.opacity = '0.45'; row.style.textDecoration = 'line-through'; }
+        var st = document.getElementById('scan-st-' + idx);
+        if (st) { st.textContent = '🗑 Deleted'; st.style.color = '#9ca3af'; }
+    } catch(e) {
+        alert('Could not delete "' + filename + '":\n\n' + e.message
+            + '\n\nThe file may be locked by Windows or protected by UAC.\nTry rebooting into Safe Mode and deleting it manually.');
+    }
 }
 
 function askScanAI(btn) {
