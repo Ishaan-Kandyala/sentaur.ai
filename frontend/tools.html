@@ -1583,15 +1583,18 @@ async function runURLCheck() {
             body: JSON.stringify({ url: url })
         });
         var d = await r.json();
-        if (d.query_status === 'no_results') {
+        var qs = d.query_status || '';
+        var us = d.url_status || '';
+        if (qs === 'no_results') {
             out.innerHTML = '<div class="tool-card"><span class="badge ok">✓ Clean</span> <span style="font-size:13px;margin-left:6px;">Not found in URLhaus — no known malware distribution.</span></div>';
             return;
         }
-        if (d.query_status !== 'is_online' && d.query_status !== 'is_offline') {
-            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Unexpected response from URLhaus (status: ' + esc(String(d.query_status || 'unknown')) + '). Try including the full URL with http:// or https://.</div>';
+        var isOnline  = qs === 'is_online'  || us === 'online';
+        var isOffline = qs === 'is_offline' || us === 'offline';
+        if (!isOnline && !isOffline) {
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Could not determine status from URLhaus (raw: ' + esc(qs || us || 'no status returned') + '). Make sure the URL includes http:// or https://.</div>';
             return;
         }
-        var isOffline = d.query_status === 'is_offline';
         var html = '<div class="tool-card"><div style="margin-bottom:12px;">'
             + (isOffline
                 ? '<span class="badge med">⚠ Previously Malicious</span><span style="font-size:13px;margin-left:8px;font-weight:600;">Found in URLhaus (now offline)</span>'
