@@ -297,6 +297,11 @@
         html.dark .scan-file-row   { background: #111827 !important; border-color: rgba(255,255,255,0.08) !important; }
         html.dark .scan-file-name  { color: #e8edf5 !important; }
         html.dark .scan-prog-bar   { background: rgba(255,255,255,0.1) !important; }
+        .scan-file-type { font-size: 10px; color: var(--accent); flex-shrink: 0; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .scan-analysis  { background: var(--bg); border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; padding: 8px 12px 10px; margin-top: -6px; margin-bottom: 6px; font-size: 11px; }
+        .scan-finding-cat { font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .5px; margin-top: 6px; margin-bottom: 2px; }
+        .scan-finding-val { font-family: monospace; font-size: 11px; color: #f87171; word-break: break-all; }
+        html.dark .scan-analysis { background: #0d1421 !important; border-color: rgba(255,255,255,0.06) !important; }
 
         /* String Extractor */
         .ext-group { margin-bottom: 12px; }
@@ -655,11 +660,11 @@
         <div id="threatURLOut"></div>
 
         <div class="tool-card" style="margin-top:14px;">
-            <div class="tool-label">File Scanner — select files to hash &amp; check against MalwareBazaar</div>
+            <div class="tool-label">File Scanner — deep content analysis + MalwareBazaar + VirusTotal</div>
             <div class="scan-drop-zone" id="scanDropZone" onclick="document.getElementById('scanFileInput').click()">
                 <div class="scan-drop-icon">📂</div>
                 <div class="scan-drop-text">Click to select files, or drag &amp; drop here</div>
-                <div class="scan-drop-sub">SHA-256 is computed locally — only the hash is sent, never the file</div>
+                <div class="scan-drop-sub">Magic bytes, string extraction &amp; pattern analysis run locally — only SHA-256 hashes are sent to APIs</div>
             </div>
             <input type="file" id="scanFileInput" multiple style="display:none" onchange="startScan(this.files)">
             <div class="btn-row" style="margin-top:10px;">
@@ -1651,6 +1656,82 @@ function clearScan() {
     _scanSummary = [];
 }
 
+// ─── File content analysis ────────────────────────────────────────────────────
+var MAGIC_SIGS = [
+    { sig: [0x4D,0x5A],             type: 'Windows PE (EXE/DLL)' },
+    { sig: [0x7F,0x45,0x4C,0x46],   type: 'Linux ELF binary' },
+    { sig: [0x25,0x50,0x44,0x46],   type: 'PDF document' },
+    { sig: [0x50,0x4B,0x03,0x04],   type: 'ZIP / OOXML' },
+    { sig: [0xD0,0xCF,0x11,0xE0],   type: 'MS Office legacy' },
+    { sig: [0x89,0x50,0x4E,0x47],   type: 'PNG image' },
+    { sig: [0xFF,0xD8,0xFF],         type: 'JPEG image' },
+    { sig: [0x47,0x49,0x46,0x38],   type: 'GIF image' },
+    { sig: [0xCA,0xFE,0xBA,0xBE],   type: 'Java class' },
+    { sig: [0x1F,0x8B],             type: 'GZip archive' },
+    { sig: [0x52,0x61,0x72,0x21],   type: 'RAR archive' },
+    { sig: [0x37,0x7A,0xBC,0xAF],   type: '7-Zip archive' },
+];
+function detectMagic(bytes) {
+    for (var m of MAGIC_SIGS) {
+        if (m.sig.every(function(b,i){ return bytes[i] === b; })) return m.type;
+    }
+    var hdr = '', lim = Math.min(bytes.length, 512);
+    for (var i = 0; i < lim; i++) hdr += String.fromCharCode(bytes[i]);
+    hdr = hdr.toLowerCase();
+    if (hdr.startsWith('<?php')) return 'PHP script';
+    if (hdr.startsWith('#!/')) return 'Shell script';
+    if (hdr.includes('<html') || hdr.startsWith('<!doctype')) return 'HTML document';
+    if (hdr.startsWith('@echo off') || hdr.includes('cmd /c')) return 'Batch script';
+    return null;
+}
+function extractStrings(bytes) {
+    var out = [], run = '', lim = Math.min(bytes.length, 2097152);
+    for (var i = 0; i < lim; i++) {
+        var c = bytes[i];
+        if (c >= 0x20 && c < 0x7F) { run += String.fromCharCode(c); }
+        else { if (run.length >= 6) out.push(run); run = ''; }
+        if (out.length >= 3000) break;
+    }
+    if (run.length >= 6) out.push(run);
+    return out;
+}
+var SCAN_PATTERNS = {
+    'Suspicious APIs':      /\b(CreateRemoteThread|VirtualAllocEx?|WriteProcessMemory|ShellExecuteA?W?|URLDownloadToFile|WinExec|RegCreateKey|SetWindowsHookEx|OpenProcess|NtUnmapViewOfSection|GetProcAddress|LoadLibraryA?W?)\b/g,
+    'Network IOCs':         /\b((\d{1,3}\.){3}\d{1,3})(:\d{2,5})?\b/g,
+    'Embedded URLs':        /https?:\/\/[a-zA-Z0-9][\w\-.]{0,80}(\/[\S]{0,80})?/g,
+    'Registry persistence': /HKEY(_(LOCAL_MACHINE|CURRENT_USER|CLASSES_ROOT))\\[\w\\]{5,}/gi,
+    'PowerShell attack':    /\b(IEX|Invoke-Expression|DownloadString|DownloadFile|EncodedCommand|-noprofile|-bypass|FromBase64String)\b/gi,
+    'Obfuscation':          /(\\x[0-9a-fA-F]{2}){4,}|eval\s*\(|unescape\s*\(|String\.fromCharCode/g,
+    'Scheduled tasks':      /schtasks|sc\s+create|sc\s+start|SYSTEM\\CurrentControlSet\\Services/gi,
+};
+function patternScan(strings) {
+    var text = strings.join('\n'), findings = {};
+    Object.keys(SCAN_PATTERNS).forEach(function(name) {
+        var rx = new RegExp(SCAN_PATTERNS[name].source, SCAN_PATTERNS[name].flags);
+        var matches = [], seen = {}, m;
+        while ((m = rx.exec(text)) !== null) {
+            var v = m[0]; if (!seen[v]) { seen[v] = 1; matches.push(v); }
+            if (matches.length >= 5) break;
+        }
+        if (matches.length) findings[name] = matches;
+    });
+    return findings;
+}
+async function analyzeFileContent(file) {
+    var buf = await file.slice(0, 2097152).arrayBuffer();
+    var bytes = new Uint8Array(buf);
+    var magic = detectMagic(bytes);
+    var strings = extractStrings(bytes);
+    return { magic: magic, stringCount: strings.length, findings: patternScan(strings) };
+}
+async function checkVirusTotal(hash) {
+    try {
+        var r = await fetch('/api/tools/virustotal-hash', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({hash: hash}) });
+        return await r.json();
+    } catch(e) { return { error: e.message }; }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 async function startScan(files) {
     if (!files || !files.length) return;
     var total = files.length;
@@ -1668,57 +1749,107 @@ async function startScan(files) {
 
     for (var i = 0; i < total; i++) {
         var file = files[i];
-        lbl.textContent = 'Hashing ' + (i+1) + ' / ' + total + ': ' + file.name;
+        lbl.textContent = 'Scanning ' + (i+1) + ' / ' + total + ': ' + file.name;
         fill.style.width = Math.round((i / total) * 100) + '%';
 
-        // Create row placeholder
         var rowId = 'scan-row-' + i;
         var row = document.createElement('div');
         row.className = 'scan-file-row';
         row.id = rowId;
         row.innerHTML = '<span class="scan-file-name" title="' + esc(file.name) + '">' + esc(file.name) + '</span>'
             + '<span class="scan-file-size">' + fmtBytes(file.size) + '</span>'
+            + '<span class="scan-file-type" id="scan-type-' + i + '"></span>'
             + '<span class="scan-file-hash" id="scan-hash-' + i + '">computing…</span>'
             + '<span class="scan-status pending" id="scan-st-' + i + '">⏳</span>';
         out.appendChild(row);
+        var analysisDiv = document.createElement('div');
+        analysisDiv.className = 'scan-analysis';
+        analysisDiv.id = 'scan-analysis-' + i;
+        analysisDiv.style.display = 'none';
+        out.appendChild(analysisDiv);
 
         try {
+            var contentP = analyzeFileContent(file);
             var buf  = await file.arrayBuffer();
             var hash = await sha256hex(buf);
             document.getElementById('scan-hash-' + i).textContent = hash.slice(0, 16) + '…';
 
-            // Query MalwareBazaar via backend proxy (avoids browser CORS restrictions)
-            var r = await fetch('/api/tools/hash-check', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ hash: hash })
-            });
+            var content = await contentP;
+            if (content.magic) document.getElementById('scan-type-' + i).textContent = content.magic;
+
+            var r = await fetch('/api/tools/hash-check', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({hash: hash}) });
             var d = await r.json();
+            var vtData = await checkVirusTotal(hash);
 
             var st = document.getElementById('scan-st-' + i);
-            if (d.query_status === 'hash_not_found') {
-                st.textContent = '✓ Clean';
-                st.className = 'scan-status clean';
-                _scanSummary.push({ name: file.name, hash: hash, result: 'clean' });
-            } else if (d.query_status === 'ok' && d.data && d.data.length) {
-                var rec = d.data[0];
-                st.textContent = '🚨 ' + (rec.signature || 'Malware');
+            var isMalware = false, mbRec = null;
+
+            if (d.query_status === 'ok' && d.data && d.data.length) {
+                mbRec = d.data[0]; isMalware = true;
+                st.textContent = '🚨 ' + (mbRec.signature || 'Malware');
                 st.className = 'scan-status mal';
                 row.style.borderColor = 'rgba(248,113,113,0.4)';
                 row.style.background = 'rgba(248,113,113,0.04)';
-                _scanSummary.push({ name: file.name, hash: hash, result: 'malware', sig: rec.signature, tags: (rec.tags||[]).join(',') });
+            } else if (d.query_status === 'hash_not_found') {
+                st.textContent = '✓ MB clean'; st.className = 'scan-status clean';
             } else {
-                st.textContent = '— unknown';
-                st.className = 'scan-status pending';
-                _scanSummary.push({ name: file.name, hash: hash, result: 'unknown' });
+                st.textContent = '— unknown'; st.className = 'scan-status pending';
             }
+
+            var vtSummary = null;
+            if (vtData && !vtData.error && vtData.data && vtData.data.attributes) {
+                var vstats = vtData.data.attributes.last_analysis_stats || {};
+                var vmal = vstats.malicious || 0;
+                var vtot = Object.values(vstats).reduce(function(a,b){return a+b;}, 0);
+                vtSummary = { malicious: vmal, total: vtot, stats: vstats };
+                if (vmal > 0) {
+                    isMalware = true;
+                    row.style.borderColor = 'rgba(248,113,113,0.4)';
+                    row.style.background = 'rgba(248,113,113,0.04)';
+                    st.textContent = '🚨 VT: ' + vmal + '/' + vtot;
+                    st.className = 'scan-status mal';
+                } else if (!isMalware) {
+                    st.textContent = '✓ Clean (VT 0/' + vtot + ')';
+                    st.className = 'scan-status clean';
+                }
+            }
+
+            var aHtml = '';
+            if (vtSummary) {
+                var vtC = vtSummary.malicious > 0 ? '#f87171' : '#4ade80';
+                aHtml += '<div class="scan-finding-cat">VirusTotal</div>'
+                    + '<div class="scan-finding-val" style="color:' + vtC + ';margin-bottom:4px;">'
+                    + vtSummary.malicious + ' / ' + vtSummary.total + ' engines detected this file</div>';
+            } else if (vtData && vtData.error === 'not_found') {
+                aHtml += '<div class="scan-finding-cat">VirusTotal</div><div class="scan-finding-val" style="color:var(--text-secondary);margin-bottom:4px;">Hash not in VT database (new or rare file)</div>';
+            } else if (vtData && vtData.error === 'no_key') {
+                aHtml += '<div class="scan-finding-cat">VirusTotal</div><div class="scan-finding-val" style="color:var(--text-secondary);margin-bottom:4px;">Add VIRUSTOTAL_API_KEY for multi-engine scanning</div>';
+            }
+            if (mbRec) {
+                aHtml += '<div class="scan-finding-cat">MalwareBazaar</div>'
+                    + '<div class="scan-finding-val" style="margin-bottom:4px;">' + esc(mbRec.signature || '')
+                    + (mbRec.tags && mbRec.tags.length ? ' · ' + mbRec.tags.join(', ') : '') + '</div>';
+            }
+            Object.keys(content.findings).forEach(function(cat) {
+                aHtml += '<div class="scan-finding-cat">' + esc(cat) + '</div>'
+                    + '<div class="scan-finding-val" style="margin-bottom:4px;">'
+                    + content.findings[cat].map(esc).join('<br>') + '</div>';
+            });
+            if (aHtml) { analysisDiv.innerHTML = aHtml; analysisDiv.style.display = 'block'; }
+
+            var entry = { name: file.name, hash: hash, size: file.size, magic: content.magic,
+                result: isMalware ? 'malware' : (d.query_status === 'hash_not_found' ? 'clean' : 'unknown'),
+                content_findings: content.findings };
+            if (mbRec) { entry.mb_sig = mbRec.signature; entry.mb_tags = mbRec.tags; }
+            if (vtSummary) entry.vt = vtSummary;
+            _scanSummary.push(entry);
+
         } catch(e) {
             var st2 = document.getElementById('scan-st-' + i);
             if (st2) { st2.textContent = 'error'; st2.className = 'scan-status pending'; }
             _scanSummary.push({ name: file.name, hash: '', result: 'error', err: e.message });
         }
 
-        // Small delay to avoid rate-limiting
         if (i < total - 1) await new Promise(function(res){ setTimeout(res, 400); });
     }
 
@@ -1732,8 +1863,13 @@ function askScanAI(btn) {
     if (!_scanSummary.length) return;
     var threats = _scanSummary.filter(function(s){ return s.result === 'malware'; });
     var clean   = _scanSummary.filter(function(s){ return s.result === 'clean'; }).length;
-    var msg = aiCtx('File Scanner (MalwareBazaar)', { 'files scanned': _scanSummary.length, 'clean': clean, 'threats found': threats.length }, { scan_results: _scanSummary });
-    msg += 'Analyze these file scan results. For each malicious file: explain what the malware family does, how it behaves on an infected system, what persistence mechanisms it typically uses, and provide step-by-step containment and remediation instructions. Also advise on what to do with the clean files — do any of the file names or types raise concern even if the hash was not found?';
+    var msg = aiCtx('File Scanner', { 'files scanned': _scanSummary.length, 'clean': clean, 'threats found': threats.length }, { scan_results: _scanSummary });
+    msg += 'You are a malware analyst. Analyze these scan results comprehensively:\n'
+        + '1. For each malicious file (MalwareBazaar hit or VirusTotal detections): explain the malware family, its behavior on an infected system, typical persistence mechanisms, and provide exact step-by-step removal and remediation instructions.\n'
+        + '2. For files with suspicious content_findings (APIs, URLs, PowerShell, registry keys, etc.): assess the risk level, explain what each finding indicates, and whether it suggests malicious intent.\n'
+        + '3. For VirusTotal results: explain what the detection ratio means and which engine families are flagging it.\n'
+        + '4. For clean files: note anything suspicious about names, detected file types, or content that warrants caution.\n'
+        + '5. Provide a final prioritized action list — what should the user do first to protect their system?';
     sendToAI(msg, btn);
 }
 

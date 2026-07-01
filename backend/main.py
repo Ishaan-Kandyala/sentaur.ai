@@ -365,4 +365,30 @@ async def proxy_url_check(request: Request):
         return {"query_status": "error"}
 
 
+@app.post("/api/tools/virustotal-hash")
+@limiter.limit("10/minute")
+async def virustotal_hash(request: Request):
+    body = await request.json()
+    hash_val = (body.get("hash") or "").strip()
+    if not hash_val:
+        return {"error": "no_hash"}
+    api_key = os.getenv("VIRUSTOTAL_API_KEY", "")
+    if not api_key:
+        return {"error": "no_key"}
+    try:
+        resp = _requests.get(
+            f"https://www.virustotal.com/api/v3/files/{hash_val}",
+            headers={"x-apikey": api_key},
+            timeout=15,
+        )
+        if resp.status_code == 404:
+            return {"error": "not_found"}
+        if resp.status_code == 429:
+            return {"error": "rate_limited"}
+        return resp.json()
+    except Exception as e:
+        print(f"VirusTotal error: {e}")
+        return {"error": str(e)}
+
+
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
