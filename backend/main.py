@@ -324,6 +324,50 @@ def city_search(q: str = Query(..., min_length=2), user=Depends(get_current_user
         return []
 
 
+@app.get("/api/tools/ip-lookup")
+@limiter.limit("30/minute")
+async def proxy_ip_lookup(request: Request, ip: str = ""):
+    try:
+        fields = "status,message,country,countryCode,regionName,city,zip,lat,lon,isp,org,as,query"
+        target = f"http://ip-api.com/json/{ip}?fields={fields}"
+        resp = _requests.get(target, timeout=10)
+        return resp.json()
+    except Exception as e:
+        return {"status": "fail", "message": str(e)}
+
+
+@app.get("/api/tools/cve-lookup")
+@limiter.limit("20/minute")
+async def proxy_cve_lookup(request: Request, cve_id: str = ""):
+    cve_id = cve_id.strip().upper()
+    if not cve_id:
+        return {"error": "no_id"}
+    # Try NVD first
+    try:
+        resp = _requests.get(
+            f"https://services.nvd.nist.gov/rest/json/cves/2.0?cveId={cve_id}",
+            headers={"User-Agent": "SentaurAI/1.0"},
+            timeout=12,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("vulnerabilities"):
+                return {"source": "nvd", "data": data}
+    except Exception:
+        pass
+    # Fallback: cve.circl.lu (no rate limits, no key needed)
+    try:
+        resp2 = _requests.get(
+            f"https://cve.circl.lu/api/cve/{cve_id}",
+            timeout=10,
+        )
+        if resp2.status_code == 200 and resp2.json():
+            return {"source": "circl", "data": resp2.json()}
+    except Exception:
+        pass
+    return {"error": "not_found"}
+
+
 @app.post("/api/tools/hash-check")
 @limiter.limit("30/minute")
 async def proxy_hash_check(request: Request):

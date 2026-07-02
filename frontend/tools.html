@@ -815,42 +815,51 @@ async function runCVE() {
     if (!id.startsWith('CVE-')) id = 'CVE-' + id;
     out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Looking up…</div>';
     try {
-        const r = await fetch('https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=' + id);
+        const r = await fetch('/api/tools/cve-lookup?cve_id=' + encodeURIComponent(id));
         if (!r.ok) throw new Error('HTTP ' + r.status);
-        const d = await r.json();
-        if (!d.vulnerabilities || !d.vulnerabilities.length) {
-            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">CVE not found.</div>';
+        const wrapper = await r.json();
+        if (wrapper.error === 'not_found') {
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">CVE not found in NVD or CIRCL databases.</div>';
             return;
         }
-        const cve  = d.vulnerabilities[0].cve;
-        const desc = (cve.descriptions || []).find(function(x){ return x.lang === 'en'; });
-        const m    = cve.metrics || {};
-        const vArr = m.cvssMetricV31 || m.cvssMetricV30 || m.cvssMetricV2 || [];
-        let score = null, severity = null;
-        if (vArr.length) {
-            const cd = vArr[0].cvssData;
-            score    = cd.baseScore;
-            severity = cd.baseSeverity || vArr[0].baseSeverity;
+        if (wrapper.error) throw new Error(wrapper.error);
+
+        let score = null, severity = null, pub = '—', descText = null, refs = [], cveId = id;
+
+        if (wrapper.source === 'nvd') {
+            const cve = wrapper.data.vulnerabilities[0].cve;
+            cveId = cve.id;
+            const descObj = (cve.descriptions || []).find(function(x){ return x.lang === 'en'; });
+            descText = descObj ? descObj.value : null;
+            const m = cve.metrics || {};
+            const vArr = m.cvssMetricV31 || m.cvssMetricV30 || m.cvssMetricV2 || [];
+            if (vArr.length) { score = vArr[0].cvssData.baseScore; severity = vArr[0].cvssData.baseSeverity || vArr[0].baseSeverity; }
+            pub = cve.published ? new Date(cve.published).toLocaleDateString() : '—';
+            refs = (cve.references || []).slice(0, 6).map(function(r){ return r.url; });
+        } else {
+            const d = wrapper.data;
+            cveId = d.id || id;
+            descText = d.summary || null;
+            score = d.cvss || null;
+            severity = score ? (score >= 9 ? 'CRITICAL' : score >= 7 ? 'HIGH' : score >= 4 ? 'MEDIUM' : 'LOW') : null;
+            pub = d.Published ? new Date(d.Published).toLocaleDateString() : '—';
+            refs = (d.references || []).slice(0, 6);
         }
+
+        _lastData.cve = { id: cveId, score, severity, published: pub, description: descText, references: refs };
         const sevCls = severity ? ({'CRITICAL':'sev-critical','HIGH':'sev-high','MEDIUM':'sev-medium','LOW':'sev-low'}[severity] || 'sev-none') : 'sev-none';
-        const pub = cve.published ? new Date(cve.published).toLocaleDateString() : '—';
-        _lastData.cve = { id: cve.id, score, severity, published: pub, description: desc ? desc.value : null, references: (cve.references||[]).map(function(r){ return r.url; }) };
-        const refs = (cve.references || []).slice(0, 6);
         let html = '<div class="tool-card">';
-        html += '<div style="font-weight:700;font-size:15px;margin-bottom:10px;">' + cve.id + '</div>';
+        html += '<div style="font-weight:700;font-size:15px;margin-bottom:10px;">' + esc(cveId) + '</div>';
         if (score !== null) {
-            html += '<div class="cve-score ' + sevCls + '">' +
-                '<div class="cve-score-num">' + score + '</div>' +
-                '<div><div class="cve-score-sev">' + (severity || '—') + '</div><div class="cve-score-sub">CVSS Base Score</div></div>' +
-                '</div>';
+            html += '<div class="cve-score ' + sevCls + '"><div class="cve-score-num">' + score + '</div>' +
+                '<div><div class="cve-score-sev">' + (severity || '—') + '</div><div class="cve-score-sub">CVSS Base Score</div></div></div>';
         }
         html += '<div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;">Published: ' + pub + '</div>';
-        if (desc) html += '<div class="cve-desc">' + esc(desc.value) + '</div>';
+        if (descText) html += '<div class="cve-desc">' + esc(descText) + '</div>';
         if (refs.length) {
             html += '<div class="tool-label">References</div>';
             refs.forEach(function(ref) {
-                var safeUrl = /^https?:\/\//i.test(ref.url) ? ref.url : '#';
-                html += '<a class="cve-ref" href="' + esc(safeUrl) + '" target="_blank" rel="noopener noreferrer">' + esc(ref.url) + '</a>';
+                html += '<a class="cve-ref" href="' + esc(ref) + '" target="_blank" rel="noopener noreferrer">' + esc(ref) + '</a>';
             });
         }
         html += '</div>';
@@ -873,8 +882,7 @@ async function runIP() {
     const out = document.getElementById('ipOut');
     out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Looking up…</div>';
     try {
-        const url = 'https://ip-api.com/json/' + (ip || '') + '?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,isp,org,as,query';
-        const r = await fetch(url);
+        const r = await fetch('/api/tools/ip-lookup?ip=' + encodeURIComponent(ip));
         const d = await r.json();
         if (d.status !== 'success') {
             out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">' + esc(d.message || 'Lookup failed') + '</div>';
