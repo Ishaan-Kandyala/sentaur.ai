@@ -519,19 +519,20 @@ async def proxy_otx(request: Request, type: str = "ip", value: str = ""):
         return {"error": str(e)}
 
 
-@app.get("/api/tools/shodan")
+@app.get("/api/tools/censys")
 @limiter.limit("10/minute")
-async def proxy_shodan(request: Request, ip: str = ""):
+async def proxy_censys(request: Request, ip: str = ""):
     ip = ip.strip()
     if not ip:
         return {"error": "no_ip"}
-    api_key = os.getenv("SHODAN_API_KEY", "")
-    if not api_key:
+    api_id = os.getenv("CENSYS_API_ID", "")
+    api_secret = os.getenv("CENSYS_API_SECRET", "")
+    if not api_id or not api_secret:
         return {"error": "no_key"}
     try:
         resp = _requests.get(
-            f"https://api.shodan.io/shodan/host/{ip}",
-            params={"key": api_key},
+            f"https://search.censys.io/api/v2/hosts/{ip}",
+            auth=(api_id, api_secret),
             timeout=12,
         )
         if resp.status_code == 404:

@@ -201,8 +201,8 @@
                     <button class="app-menu-item ami-sub" onclick="openTool('fp-otx','otx')">
                         <span class="ami-icon">🛡</span> AlienVault OTX
                     </button>
-                    <button class="app-menu-item ami-sub" onclick="openTool('fp-shodan','shodan')">
-                        <span class="ami-icon">🌊</span> Shodan
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-censys','censys')">
+                        <span class="ami-icon">🔭</span> Censys
                     </button>
                     <div class="ami-section-label">Preferences</div>
                     <button class="app-menu-item ami-sub" id="darkModeItem" onclick="toggleDarkMode(); updateDarkModeItem()">
@@ -432,9 +432,9 @@
     <div class="fp-body"><iframe src="tools.html#otx" title="AlienVault OTX" loading="lazy"></iframe></div>
 </div>
 
-<div class="float-panel fp-tool-panel" id="fp-shodan" style="top:460px;left:665px">
-    <div class="fp-hdr"><span class="fp-title">🌊 Shodan</span><button class="fp-close" onclick="fpClose('fp-shodan')">×</button></div>
-    <div class="fp-body"><iframe src="tools.html#shodan" title="Shodan" loading="lazy"></iframe></div>
+<div class="float-panel fp-tool-panel" id="fp-censys" style="top:460px;left:665px">
+    <div class="fp-hdr"><span class="fp-title">🔭 Censys</span><button class="fp-close" onclick="fpClose('fp-censys')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#censys" title="Censys" loading="lazy"></iframe></div>
 </div>
 
 <script src="script.js"></script>
@@ -571,7 +571,7 @@
         'fp-abuseipdb': '🚨 AbuseIPDB',
         'fp-ipinfo': '📡 IPinfo',
         'fp-otx': '🛡 OTX',
-        'fp-shodan': '🌊 Shodan'
+        'fp-censys': '🔭 Censys'
     };
 
     function getOverlapTarget(draggingEl, cx, cy) {

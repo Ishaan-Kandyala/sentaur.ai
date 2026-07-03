@@ -351,7 +351,7 @@
         <button class="tool-tab"        data-tab="abuseipdb"  onclick="switchTab('abuseipdb',this)">🚨 AbuseIPDB</button>
         <button class="tool-tab"        data-tab="ipinfo"     onclick="switchTab('ipinfo',this)">📡 IPinfo</button>
         <button class="tool-tab"        data-tab="otx"        onclick="switchTab('otx',this)">🛡 OTX</button>
-        <button class="tool-tab"        data-tab="shodan"     onclick="switchTab('shodan',this)">🌊 Shodan</button>
+        <button class="tool-tab"        data-tab="censys"     onclick="switchTab('censys',this)">🔭 Censys</button>
     </div>
 
     <!-- ══ HASH IDENTIFIER ══ -->
@@ -767,17 +767,17 @@
     <div id="otxOut"></div>
 </div>
 
-<!-- ══ SHODAN ══ -->
-<div class="tool-panel" id="panel-shodan">
+<!-- ══ CENSYS ══ -->
+<div class="tool-panel" id="panel-censys">
     <div class="tool-card">
         <div class="tool-label">IP address</div>
-        <input class="tool-input" id="shodanInput" placeholder="8.8.8.8" onkeydown="if(event.key==='Enter')runShodan()">
+        <input class="tool-input" id="censysInput" placeholder="8.8.8.8" onkeydown="if(event.key==='Enter')runCensys()">
         <div class="btn-row">
-            <button class="tool-btn" onclick="runShodan()">Query Shodan</button>
-            <button class="tool-btn ask-ai-btn" onclick="askShodanAI(this)">🤖 Ask AI</button>
+            <button class="tool-btn" onclick="runCensys()">Query Censys</button>
+            <button class="tool-btn ask-ai-btn" onclick="askCensysAI(this)">🤖 Ask AI</button>
         </div>
     </div>
-    <div id="shodanOut"></div>
+    <div id="censysOut"></div>
 </div>
 
 </div><!-- /tools-page -->
@@ -2320,55 +2320,54 @@ function askOTXAI(btn) {
     sendToAI(msg, btn);
 }
 
-// ══════════════════ SHODAN ══════════════════
-async function runShodan() {
-    var ip  = document.getElementById('shodanInput').value.trim();
-    var out = document.getElementById('shodanOut');
+// ══════════════════ CENSYS ══════════════════
+async function runCensys() {
+    var ip  = document.getElementById('censysInput').value.trim();
+    var out = document.getElementById('censysOut');
     if (!ip) return;
-    out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Querying Shodan…</div>';
+    out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Querying Censys…</div>';
     try {
-        var r = await fetch('/api/tools/shodan?ip=' + encodeURIComponent(ip));
+        var r = await fetch('/api/tools/censys?ip=' + encodeURIComponent(ip));
         var d = await r.json();
         if (d.error === 'no_key') {
-            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Requires a Shodan API key. Register at <a href="https://account.shodan.io" target="_blank" style="color:var(--accent)">account.shodan.io</a> and add <code>SHODAN_API_KEY=your_key</code> to your .env and Render environment variables.</div>';
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Requires a free Censys API key. Register at <a href="https://search.censys.io/register" target="_blank" style="color:var(--accent)">search.censys.io/register</a> and add <code>CENSYS_API_ID</code> and <code>CENSYS_API_SECRET</code> to your .env and Render environment variables.</div>';
             return;
         }
         if (d.error === 'not_found') {
-            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">IP not found in Shodan — no scan data available for this address.</div>';
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">IP not found in Censys — no scan data available for this address.</div>';
             return;
         }
         if (d.error) throw new Error(d.error);
-        _lastData.shodan = { ip: ip, result: d };
-        var ports = (d.ports || []).join(', ');
-        var vulns = d.vulns ? Object.keys(d.vulns) : [];
+        var result = d.result || d;
+        _lastData.censys = { ip: ip, result: result };
+        var loc = result.location || {};
+        var asn = result.autonomous_system || {};
+        var services = result.services || [];
+        var labels = result.labels || [];
         var html = '<div class="tool-card">';
-        if (vulns.length) {
-            html += '<div style="margin-bottom:10px;"><span class="badge low">⚠ ' + vulns.length + ' CVE' + (vulns.length > 1 ? 's' : '') + ' detected</span></div>';
+        if (labels.length) {
+            html += '<div style="margin-bottom:10px;">' + labels.map(function(l) {
+                return '<span style="display:inline-block;margin-right:4px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:rgba(74,108,247,.15);color:var(--accent);">' + esc(l) + '</span>';
+            }).join('') + '</div>';
         }
-        [['IP', d.ip_str], ['Country', d.country_name],
-         ['City', d.city], ['ISP', d.isp], ['ASN', d.asn ? String(d.asn) : null],
-         ['OS', d.os], ['Hostnames', d.hostnames && d.hostnames.length ? d.hostnames.slice(0,3).join(', ') : null],
-         ['Last Update', d.last_update ? new Date(d.last_update).toLocaleDateString() : null]
+        [['IP', result.ip],
+         ['Country', loc.country],
+         ['City', loc.city],
+         ['Coordinates', loc.coordinates ? loc.coordinates.latitude + ', ' + loc.coordinates.longitude : null],
+         ['ASN', asn.asn ? 'AS' + asn.asn + ' — ' + (asn.name || '') : null],
+         ['BGP Prefix', asn.bgp_prefix],
+         ['Last Updated', result.last_updated_at ? new Date(result.last_updated_at).toLocaleDateString() : null]
         ].forEach(function(f) {
             if (f[1]) html += '<div class="threat-row"><span class="threat-key">' + f[0] + '</span><span class="threat-val">' + esc(String(f[1])) + '</span></div>';
         });
-        if (ports) {
-            html += '<div class="threat-row"><span class="threat-key">Open Ports</span><span class="threat-val" style="word-break:break-word;">' + esc(ports) + '</span></div>';
-        }
-        if (vulns.length) {
-            html += '<div class="tool-label" style="margin-top:10px;">CVE Vulnerabilities</div>';
-            vulns.forEach(function(cve) {
-                html += '<div style="font-family:monospace;font-size:12px;color:#f87171;padding:2px 0;">' + esc(cve) + '</div>';
-            });
-        }
-        if (d.data && d.data.length) {
-            html += '<div class="tool-label" style="margin-top:10px;">Services (' + d.data.length + ' total)</div>';
-            d.data.slice(0, 6).forEach(function(svc) {
-                var banner = (svc.data || '').slice(0, 150).replace(/[\r\n]+/g, ' ');
-                var mod = svc._shodan ? (svc._shodan.module || '') : '';
+        if (services.length) {
+            html += '<div class="tool-label" style="margin-top:10px;">Services (' + services.length + ' open ports)</div>';
+            services.slice(0, 8).forEach(function(svc) {
+                var name = svc.service_name || svc.transport_protocol || '';
+                var banner = svc.banner ? svc.banner.slice(0, 120).replace(/[\r\n]+/g, ' ') : '';
                 html += '<div class="threat-row" style="flex-direction:column;gap:3px;">'
-                    + '<span style="font-weight:600;font-size:12px;">Port ' + esc(String(svc.port)) + '/' + esc(svc.transport || 'tcp')
-                    + (svc.product || mod ? ' — ' + esc(svc.product || mod) : '') + '</span>'
+                    + '<span style="font-weight:600;font-size:12px;">Port ' + esc(String(svc.port)) + '/' + esc((svc.transport_protocol || 'tcp').toLowerCase())
+                    + (name ? ' — ' + esc(name) : '') + '</span>'
                     + (banner ? '<span style="font-family:monospace;font-size:11px;color:var(--text-secondary);word-break:break-all;">' + esc(banner) + '</span>' : '')
                     + '</div>';
             });
@@ -2379,11 +2378,11 @@ async function runShodan() {
         out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">Request failed: ' + esc(e.message) + '</div>';
     }
 }
-function askShodanAI(btn) {
-    var ip = document.getElementById('shodanInput').value.trim();
+function askCensysAI(btn) {
+    var ip = document.getElementById('censysInput').value.trim();
     if (!ip) return;
-    var msg = aiCtx('Shodan Host Intelligence', { IP: ip }, _lastData.shodan);
-    msg += 'Analyze this Shodan scan data. For each open port and service: explain what it is, whether internet exposure is a risk, and known vulnerabilities for that service version. For each CVE listed: explain severity and exploitability. Provide an overall attack surface assessment and prioritized hardening recommendations.';
+    var msg = aiCtx('Censys Host Intelligence', { IP: ip }, _lastData.censys);
+    msg += 'Analyze this Censys scan data. For each open port and service: explain what it is, whether internet exposure is a risk, and known attack vectors. Assess the overall attack surface and provide prioritized hardening recommendations.';
     sendToAI(msg, btn);
 }
 
