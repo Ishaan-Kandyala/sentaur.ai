@@ -525,13 +525,14 @@ async def proxy_censys(request: Request, ip: str = ""):
     ip = ip.strip()
     if not ip:
         return {"error": "no_ip"}
-    token = os.getenv("CENSYS_API_TOKEN", "")
-    if not token:
+    api_id = os.getenv("CENSYS_API_ID", "")
+    api_secret = os.getenv("CENSYS_API_SECRET", "")
+    if not api_id or not api_secret:
         return {"error": "no_key"}
     try:
         resp = _requests.get(
             f"https://search.censys.io/api/v2/hosts/{ip}",
-            headers={"Authorization": f"Bearer {token}"},
+            auth=(api_id, api_secret),
             timeout=12,
         )
         if resp.status_code == 404:
