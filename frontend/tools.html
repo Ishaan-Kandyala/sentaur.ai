@@ -2330,7 +2330,7 @@ async function runCensys() {
         var r = await fetch('/api/tools/censys?ip=' + encodeURIComponent(ip));
         var d = await r.json();
         if (d.error === 'no_key') {
-            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Requires a free Censys API key. Register at <a href="https://search.censys.io/register" target="_blank" style="color:var(--accent)">search.censys.io/register</a> and add <code>CENSYS_API_ID</code> and <code>CENSYS_API_SECRET</code> to your .env and Render environment variables.</div>';
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Requires a free Censys API token. Register at <a href="https://search.censys.io/register" target="_blank" style="color:var(--accent)">search.censys.io/register</a>, go to Account → Personal Access Tokens → Create New Token, then add <code>CENSYS_API_TOKEN=your_token</code> to your .env and Render environment variables.</div>';
             return;
         }
         if (d.error === 'not_found') {
