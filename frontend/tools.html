@@ -347,6 +347,11 @@
         <button class="tool-tab"        data-tab="baseconv" onclick="switchTab('baseconv',this)">⬡ Base Conv</button>
         <button class="tool-tab"        data-tab="threatintel" onclick="switchTab('threatintel',this)">☣ Threat Intel</button>
         <button class="tool-tab"        data-tab="filescan"   onclick="switchTab('filescan',this)">🦠 File Scanner</button>
+        <button class="tool-tab"        data-tab="breachcheck" onclick="switchTab('breachcheck',this)">💀 Breach Check</button>
+        <button class="tool-tab"        data-tab="abuseipdb"  onclick="switchTab('abuseipdb',this)">🚨 AbuseIPDB</button>
+        <button class="tool-tab"        data-tab="ipinfo"     onclick="switchTab('ipinfo',this)">📡 IPinfo</button>
+        <button class="tool-tab"        data-tab="otx"        onclick="switchTab('otx',this)">🛡 OTX</button>
+        <button class="tool-tab"        data-tab="shodan"     onclick="switchTab('shodan',this)">🌊 Shodan</button>
     </div>
 
     <!-- ══ HASH IDENTIFIER ══ -->
@@ -701,7 +706,81 @@
         </div>
         <div id="scanResults"></div>
     </div>
+
+<!-- ══ BREACH CHECK ══ -->
+<div class="tool-panel" id="panel-breachcheck">
+    <div class="tool-card">
+        <div class="tool-label">Email address</div>
+        <input class="tool-input" id="breachInput" type="email" placeholder="user@example.com" onkeydown="if(event.key==='Enter')runBreachCheck()">
+        <div class="btn-row">
+            <button class="tool-btn" onclick="runBreachCheck()">Check Breaches</button>
+            <button class="tool-btn ask-ai-btn" onclick="askBreachAI(this)">🤖 Ask AI</button>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text-secondary);">Powered by XposedOrNot — free, no API key required</div>
+    </div>
+    <div id="breachOut"></div>
 </div>
+
+<!-- ══ ABUSEIPDB ══ -->
+<div class="tool-panel" id="panel-abuseipdb">
+    <div class="tool-card">
+        <div class="tool-label">IP address</div>
+        <input class="tool-input" id="abuseipdbInput" placeholder="1.1.1.1" onkeydown="if(event.key==='Enter')runAbuseIPDB()">
+        <div class="btn-row">
+            <button class="tool-btn" onclick="runAbuseIPDB()">Check Reputation</button>
+            <button class="tool-btn ask-ai-btn" onclick="askAbuseIPDBAI(this)">🤖 Ask AI</button>
+        </div>
+    </div>
+    <div id="abuseipdbOut"></div>
+</div>
+
+<!-- ══ IPINFO ══ -->
+<div class="tool-panel" id="panel-ipinfo">
+    <div class="tool-card">
+        <div class="tool-label">IP address</div>
+        <input class="tool-input" id="ipinfoInput" placeholder="1.2.3.4" onkeydown="if(event.key==='Enter')runIPInfo()">
+        <div class="btn-row">
+            <button class="tool-btn" onclick="runIPInfo()">Lookup IP</button>
+            <button class="tool-btn ask-ai-btn" onclick="askIPInfoAI(this)">🤖 Ask AI</button>
+        </div>
+    </div>
+    <div id="ipinfoOut"></div>
+</div>
+
+<!-- ══ ALIENVAULT OTX ══ -->
+<div class="tool-panel" id="panel-otx">
+    <div class="tool-card">
+        <div class="tool-label">Indicator type &amp; value</div>
+        <div class="btn-row" style="margin-top:0;margin-bottom:10px;">
+            <select class="short-input" id="otxType">
+                <option value="ip">IP Address</option>
+                <option value="domain">Domain</option>
+                <option value="hash">File Hash</option>
+            </select>
+        </div>
+        <input class="tool-input" id="otxInput" placeholder="1.2.3.4 / evil.com / sha256hash…" onkeydown="if(event.key==='Enter')runOTX()">
+        <div class="btn-row">
+            <button class="tool-btn" onclick="runOTX()">Query OTX</button>
+            <button class="tool-btn ask-ai-btn" onclick="askOTXAI(this)">🤖 Ask AI</button>
+        </div>
+    </div>
+    <div id="otxOut"></div>
+</div>
+
+<!-- ══ SHODAN ══ -->
+<div class="tool-panel" id="panel-shodan">
+    <div class="tool-card">
+        <div class="tool-label">IP address</div>
+        <input class="tool-input" id="shodanInput" placeholder="8.8.8.8" onkeydown="if(event.key==='Enter')runShodan()">
+        <div class="btn-row">
+            <button class="tool-btn" onclick="runShodan()">Query Shodan</button>
+            <button class="tool-btn ask-ai-btn" onclick="askShodanAI(this)">🤖 Ask AI</button>
+        </div>
+    </div>
+    <div id="shodanOut"></div>
+</div>
+
+</div><!-- /tools-page -->
 
 <script>
 // dark class applied in <head> before paint
@@ -2052,6 +2131,261 @@ function askScanAI(btn) {
         if (e.dataTransfer && e.dataTransfer.files.length) startScan(e.dataTransfer.files);
     });
 })();
+
+// ══════════════════ BREACH CHECK (XposedOrNot) ══════════════════
+async function runBreachCheck() {
+    var email = document.getElementById('breachInput').value.trim();
+    var out   = document.getElementById('breachOut');
+    if (!email) return;
+    out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Checking breach databases…</div>';
+    try {
+        var r = await fetch('/api/tools/breach-check?email=' + encodeURIComponent(email));
+        var d = await r.json();
+        if (d.error) throw new Error(d.error);
+        var breaches = d.breaches || [];
+        if (!breaches.length) {
+            out.innerHTML = '<div class="tool-card"><span class="badge high">✓ Not found</span><span style="font-size:13px;margin-left:8px;">No breaches found for this email address.</span></div>';
+            return;
+        }
+        _lastData.breach = { email: email, breaches: breaches };
+        var html = '<div class="tool-card"><div style="margin-bottom:10px;"><span class="badge low">⚠ Pwned!</span>'
+            + '<span style="font-size:13px;margin-left:8px;font-weight:600;">' + breaches.length + ' breach' + (breaches.length > 1 ? 'es' : '') + ' found</span></div>';
+        breaches.forEach(function(b) {
+            html += '<div class="threat-row"><span class="threat-val">' + esc(String(b)) + '</span></div>';
+        });
+        html += '<div style="margin-top:8px;font-size:11px;color:var(--text-secondary);">Change your password for any accounts where you reuse this password. Enable 2FA everywhere.</div>';
+        html += '</div>';
+        out.innerHTML = html;
+    } catch(e) {
+        out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">Request failed: ' + esc(e.message) + '</div>';
+    }
+}
+function askBreachAI(btn) {
+    var email = document.getElementById('breachInput').value.trim();
+    if (!email) return;
+    var msg = aiCtx('Email Breach Check', { email: email }, _lastData.breach);
+    msg += 'Analyze these breach results. For each breach site listed: explain what kind of platform it is, what data was likely exposed (passwords, emails, personal info), the risk level, and concrete remediation steps — password changes, MFA, watching for phishing. Provide a prioritized action plan.';
+    sendToAI(msg, btn);
+}
+
+// ══════════════════ ABUSEIPDB ══════════════════
+async function runAbuseIPDB() {
+    var ip  = document.getElementById('abuseipdbInput').value.trim();
+    var out = document.getElementById('abuseipdbOut');
+    if (!ip) return;
+    out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Checking AbuseIPDB…</div>';
+    try {
+        var r = await fetch('/api/tools/abuseipdb?ip=' + encodeURIComponent(ip));
+        var d = await r.json();
+        if (d.error === 'no_key') {
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Requires a free AbuseIPDB API key. Register at <a href="https://www.abuseipdb.com/account/api" target="_blank" style="color:var(--accent)">abuseipdb.com</a> and add <code>ABUSEIPDB_API_KEY=your_key</code> to your .env and Render environment variables.</div>';
+            return;
+        }
+        if (d.error) throw new Error(d.error);
+        var data = d.data;
+        if (!data) throw new Error('Unexpected response from AbuseIPDB');
+        _lastData.abuseipdb = { ip: ip, result: data };
+        var score = data.abuseConfidenceScore || 0;
+        var scoreColor = score >= 80 ? '#f87171' : score >= 40 ? '#fbbf24' : '#4ade80';
+        var scoreLabel = score >= 80 ? 'HIGH RISK' : score >= 40 ? 'SUSPICIOUS' : 'LOW RISK';
+        var html = '<div class="tool-card">';
+        html += '<div style="margin-bottom:14px;display:flex;align-items:center;gap:14px;">'
+            + '<div style="font-size:38px;font-weight:800;color:' + scoreColor + ';line-height:1;">' + score + '<span style="font-size:18px;">%</span></div>'
+            + '<div><div style="font-size:13px;font-weight:700;color:' + scoreColor + ';">' + scoreLabel + '</div>'
+            + '<div style="font-size:11px;color:var(--text-secondary);">Abuse Confidence Score</div></div></div>';
+        [['IP', data.ipAddress], ['Country', data.countryCode], ['ISP', data.isp],
+         ['Usage Type', data.usageType], ['Domain', data.domain],
+         ['Total Reports', data.totalReports != null ? String(data.totalReports) : null],
+         ['Distinct Users', data.numDistinctUsers != null ? String(data.numDistinctUsers) : null],
+         ['Last Reported', data.lastReportedAt ? new Date(data.lastReportedAt).toLocaleDateString() : null]
+        ].forEach(function(f) {
+            if (f[1] != null && f[1] !== '' && f[1] !== 'null') {
+                html += '<div class="threat-row"><span class="threat-key">' + f[0] + '</span><span class="threat-val">' + esc(f[1]) + '</span></div>';
+            }
+        });
+        if (data.isWhitelisted) html += '<div style="margin-top:8px;font-size:11px;color:#4ade80;">✓ Whitelisted</div>';
+        html += '</div>';
+        out.innerHTML = html;
+    } catch(e) {
+        out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">Request failed: ' + esc(e.message) + '</div>';
+    }
+}
+function askAbuseIPDBAI(btn) {
+    var ip = document.getElementById('abuseipdbInput').value.trim();
+    if (!ip) return;
+    var msg = aiCtx('AbuseIPDB Reputation Check', { IP: ip }, _lastData.abuseipdb);
+    msg += 'Analyze this AbuseIPDB result. Based on the confidence score, ISP, usage type, and report history: is this IP actively malicious, part of known threat infrastructure, or a false positive? Explain what attack types are typically reported from IPs like this, whether to block it, and how to investigate further.';
+    sendToAI(msg, btn);
+}
+
+// ══════════════════ IPINFO ══════════════════
+async function runIPInfo() {
+    var ip  = document.getElementById('ipinfoInput').value.trim();
+    var out = document.getElementById('ipinfoOut');
+    if (!ip) return;
+    out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Looking up…</div>';
+    try {
+        var r = await fetch('/api/tools/ipinfo?ip=' + encodeURIComponent(ip));
+        var d = await r.json();
+        if (d.error === 'no_key') {
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Requires a free IPinfo token. Register at <a href="https://ipinfo.io/signup" target="_blank" style="color:var(--accent)">ipinfo.io/signup</a> and add <code>IPINFO_TOKEN=your_token</code> to your .env and Render environment variables.</div>';
+            return;
+        }
+        if (d.error) throw new Error(d.error);
+        _lastData.ipinfo = { ip: ip, result: d };
+        var privacy = d.privacy || {};
+        var flags = [];
+        if (privacy.vpn)     flags.push('VPN');
+        if (privacy.proxy)   flags.push('Proxy');
+        if (privacy.tor)     flags.push('Tor');
+        if (privacy.hosting) flags.push('Hosting/DC');
+        var html = '<div class="tool-card">';
+        if (flags.length) {
+            html += '<div style="margin-bottom:10px;"><span class="badge medium">⚠ ' + esc(flags.join(' · ')) + '</span></div>';
+        }
+        [['IP', d.ip], ['Hostname', d.hostname], ['City', d.city],
+         ['Region', d.region], ['Country', d.country], ['Coordinates', d.loc],
+         ['Organization', d.org], ['Postal', d.postal], ['Timezone', d.timezone],
+         ['ASN', d.asn ? d.asn.asn + ' — ' + d.asn.name : null]
+        ].forEach(function(f) {
+            if (f[1]) html += '<div class="threat-row"><span class="threat-key">' + f[0] + '</span><span class="threat-val">' + esc(String(f[1])) + '</span></div>';
+        });
+        html += '</div>';
+        out.innerHTML = html;
+    } catch(e) {
+        out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">Request failed: ' + esc(e.message) + '</div>';
+    }
+}
+function askIPInfoAI(btn) {
+    var ip = document.getElementById('ipinfoInput').value.trim();
+    if (!ip) return;
+    var msg = aiCtx('IPinfo IP Intelligence', { IP: ip }, _lastData.ipinfo);
+    msg += 'Analyze this IP intelligence data. Is the ASN/org associated with hosting, VPNs, Tor, or known threat infrastructure? Is the geolocation consistent with expected use? Flag anything suspicious and suggest next investigative steps.';
+    sendToAI(msg, btn);
+}
+
+// ══════════════════ ALIENVAULT OTX ══════════════════
+async function runOTX() {
+    var type  = document.getElementById('otxType').value;
+    var value = document.getElementById('otxInput').value.trim();
+    var out   = document.getElementById('otxOut');
+    if (!value) return;
+    out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Querying AlienVault OTX…</div>';
+    try {
+        var r = await fetch('/api/tools/otx?type=' + encodeURIComponent(type) + '&value=' + encodeURIComponent(value));
+        var d = await r.json();
+        if (d.error === 'no_key') {
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Requires a free AlienVault OTX API key. Register at <a href="https://otx.alienvault.com" target="_blank" style="color:var(--accent)">otx.alienvault.com</a> and add <code>OTX_API_KEY=your_key</code> to your .env and Render environment variables.</div>';
+            return;
+        }
+        if (d.error) throw new Error(d.error);
+        _lastData.otx = { type: type, value: value, result: d };
+        var pulseCount = (d.pulse_info && d.pulse_info.count) ? d.pulse_info.count : 0;
+        var html = '<div class="tool-card">';
+        html += '<div style="margin-bottom:12px;"><span style="font-size:18px;font-weight:700;color:'
+            + (pulseCount > 0 ? '#f87171' : '#4ade80') + ';">'
+            + (pulseCount > 0 ? '⚠ ' + pulseCount + ' threat pulse' + (pulseCount > 1 ? 's' : '') : '✓ No threat pulses') + '</span></div>';
+        [['Country', d.country_name || d.country],
+         ['ASN', d.asn ? String(d.asn) : null]
+        ].forEach(function(f) {
+            if (f[1]) html += '<div class="threat-row"><span class="threat-key">' + f[0] + '</span><span class="threat-val">' + esc(f[1]) + '</span></div>';
+        });
+        if (d.pulse_info && d.pulse_info.pulses && d.pulse_info.pulses.length) {
+            html += '<div class="tool-label" style="margin-top:10px;">Recent Threat Pulses</div>';
+            d.pulse_info.pulses.slice(0, 5).forEach(function(p) {
+                var tags = (p.tags || []).slice(0, 5).join(', ');
+                html += '<div class="threat-row" style="flex-direction:column;gap:3px;">'
+                    + '<span style="font-weight:600;font-size:12px;">' + esc(p.name || '') + '</span>'
+                    + (tags ? '<span style="font-size:11px;color:#f87171;">' + esc(tags) + '</span>' : '')
+                    + (p.modified ? '<span style="font-size:10px;color:var(--text-secondary);">' + new Date(p.modified).toLocaleDateString() + '</span>' : '')
+                    + '</div>';
+            });
+        }
+        if (d.malware_families && d.malware_families.length) {
+            html += '<div class="threat-row"><span class="threat-key">Malware</span><span class="threat-val">'
+                + esc(d.malware_families.slice(0, 6).join(', ')) + '</span></div>';
+        }
+        html += '</div>';
+        out.innerHTML = html;
+    } catch(e) {
+        out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">Request failed: ' + esc(e.message) + '</div>';
+    }
+}
+function askOTXAI(btn) {
+    var type  = document.getElementById('otxType').value;
+    var value = document.getElementById('otxInput').value.trim();
+    if (!value) return;
+    var msg = aiCtx('AlienVault OTX Threat Intelligence', { type: type, indicator: value }, _lastData.otx);
+    msg += 'Analyze this OTX threat intelligence data. Explain what threat campaigns or actors are associated with this indicator, what the pulse data reveals about attack patterns, what malware families are linked, and provide actionable guidance — detection rules, blocking recommendations, and investigation steps.';
+    sendToAI(msg, btn);
+}
+
+// ══════════════════ SHODAN ══════════════════
+async function runShodan() {
+    var ip  = document.getElementById('shodanInput').value.trim();
+    var out = document.getElementById('shodanOut');
+    if (!ip) return;
+    out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Querying Shodan…</div>';
+    try {
+        var r = await fetch('/api/tools/shodan?ip=' + encodeURIComponent(ip));
+        var d = await r.json();
+        if (d.error === 'no_key') {
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">Requires a Shodan API key. Register at <a href="https://account.shodan.io" target="_blank" style="color:var(--accent)">account.shodan.io</a> and add <code>SHODAN_API_KEY=your_key</code> to your .env and Render environment variables.</div>';
+            return;
+        }
+        if (d.error === 'not_found') {
+            out.innerHTML = '<div class="tool-card" style="color:var(--text-secondary);font-size:13px;">IP not found in Shodan — no scan data available for this address.</div>';
+            return;
+        }
+        if (d.error) throw new Error(d.error);
+        _lastData.shodan = { ip: ip, result: d };
+        var ports = (d.ports || []).join(', ');
+        var vulns = d.vulns ? Object.keys(d.vulns) : [];
+        var html = '<div class="tool-card">';
+        if (vulns.length) {
+            html += '<div style="margin-bottom:10px;"><span class="badge low">⚠ ' + vulns.length + ' CVE' + (vulns.length > 1 ? 's' : '') + ' detected</span></div>';
+        }
+        [['IP', d.ip_str], ['Country', d.country_name],
+         ['City', d.city], ['ISP', d.isp], ['ASN', d.asn ? String(d.asn) : null],
+         ['OS', d.os], ['Hostnames', d.hostnames && d.hostnames.length ? d.hostnames.slice(0,3).join(', ') : null],
+         ['Last Update', d.last_update ? new Date(d.last_update).toLocaleDateString() : null]
+        ].forEach(function(f) {
+            if (f[1]) html += '<div class="threat-row"><span class="threat-key">' + f[0] + '</span><span class="threat-val">' + esc(String(f[1])) + '</span></div>';
+        });
+        if (ports) {
+            html += '<div class="threat-row"><span class="threat-key">Open Ports</span><span class="threat-val" style="word-break:break-word;">' + esc(ports) + '</span></div>';
+        }
+        if (vulns.length) {
+            html += '<div class="tool-label" style="margin-top:10px;">CVE Vulnerabilities</div>';
+            vulns.forEach(function(cve) {
+                html += '<div style="font-family:monospace;font-size:12px;color:#f87171;padding:2px 0;">' + esc(cve) + '</div>';
+            });
+        }
+        if (d.data && d.data.length) {
+            html += '<div class="tool-label" style="margin-top:10px;">Services (' + d.data.length + ' total)</div>';
+            d.data.slice(0, 6).forEach(function(svc) {
+                var banner = (svc.data || '').slice(0, 150).replace(/[\r\n]+/g, ' ');
+                var mod = svc._shodan ? (svc._shodan.module || '') : '';
+                html += '<div class="threat-row" style="flex-direction:column;gap:3px;">'
+                    + '<span style="font-weight:600;font-size:12px;">Port ' + esc(String(svc.port)) + '/' + esc(svc.transport || 'tcp')
+                    + (svc.product || mod ? ' — ' + esc(svc.product || mod) : '') + '</span>'
+                    + (banner ? '<span style="font-family:monospace;font-size:11px;color:var(--text-secondary);word-break:break-all;">' + esc(banner) + '</span>' : '')
+                    + '</div>';
+            });
+        }
+        html += '</div>';
+        out.innerHTML = html;
+    } catch(e) {
+        out.innerHTML = '<div class="tool-card" style="color:#f87171;font-size:13px;">Request failed: ' + esc(e.message) + '</div>';
+    }
+}
+function askShodanAI(btn) {
+    var ip = document.getElementById('shodanInput').value.trim();
+    if (!ip) return;
+    var msg = aiCtx('Shodan Host Intelligence', { IP: ip }, _lastData.shodan);
+    msg += 'Analyze this Shodan scan data. For each open port and service: explain what it is, whether internet exposure is a risk, and known vulnerabilities for that service version. For each CVE listed: explain severity and exploitability. Provide an overall attack surface assessment and prioritized hardening recommendations.';
+    sendToAI(msg, btn);
+}
 
 // Init
 if (window.self !== window.top) document.body.classList.add('in-iframe');

@@ -189,6 +189,21 @@
                     <button class="app-menu-item ami-sub" onclick="openTool('fp-filescan','filescan')">
                         <span class="ami-icon">🦠</span> File Scanner
                     </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-breachcheck','breachcheck')">
+                        <span class="ami-icon">💀</span> Breach Check
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-abuseipdb','abuseipdb')">
+                        <span class="ami-icon">🚨</span> AbuseIPDB
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-ipinfo','ipinfo')">
+                        <span class="ami-icon">📡</span> IPinfo
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-otx','otx')">
+                        <span class="ami-icon">🛡</span> AlienVault OTX
+                    </button>
+                    <button class="app-menu-item ami-sub" onclick="openTool('fp-shodan','shodan')">
+                        <span class="ami-icon">🌊</span> Shodan
+                    </button>
                     <div class="ami-section-label">Preferences</div>
                     <button class="app-menu-item ami-sub" id="darkModeItem" onclick="toggleDarkMode(); updateDarkModeItem()">
                         <span class="ami-icon" id="darkModeIcon">🌙</span>
@@ -397,6 +412,31 @@
     <div class="fp-body"><iframe src="tools.html#filescan" title="File Scanner" loading="lazy"></iframe></div>
 </div>
 
+<div class="float-panel fp-tool-panel" id="fp-breachcheck" style="top:415px;left:620px">
+    <div class="fp-hdr"><span class="fp-title">💀 Breach Check</span><button class="fp-close" onclick="fpClose('fp-breachcheck')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#breachcheck" title="Breach Check" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-abuseipdb" style="top:415px;left:620px">
+    <div class="fp-hdr"><span class="fp-title">🚨 AbuseIPDB</span><button class="fp-close" onclick="fpClose('fp-abuseipdb')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#abuseipdb" title="AbuseIPDB" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-ipinfo" style="top:430px;left:635px">
+    <div class="fp-hdr"><span class="fp-title">📡 IPinfo</span><button class="fp-close" onclick="fpClose('fp-ipinfo')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#ipinfo" title="IPinfo" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-otx" style="top:445px;left:650px">
+    <div class="fp-hdr"><span class="fp-title">🛡 AlienVault OTX</span><button class="fp-close" onclick="fpClose('fp-otx')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#otx" title="AlienVault OTX" loading="lazy"></iframe></div>
+</div>
+
+<div class="float-panel fp-tool-panel" id="fp-shodan" style="top:460px;left:665px">
+    <div class="fp-hdr"><span class="fp-title">🌊 Shodan</span><button class="fp-close" onclick="fpClose('fp-shodan')">×</button></div>
+    <div class="fp-body"><iframe src="tools.html#shodan" title="Shodan" loading="lazy"></iframe></div>
+</div>
+
 <script src="script.js"></script>
 <script>
 (function () {
@@ -526,7 +566,12 @@
         'fp-dns': '🌐 DNS', 'fp-whois': '📋 WHOIS', 'fp-cve': '🐛 CVE',
         'fp-ip': '🌍 IP', 'fp-subdomains': '🔭 Subdomains', 'fp-password': '🔒 Password', 'fp-baseconv': '⬡ Base',
         'fp-threatintel': '☣ Threat Intel',
-        'fp-filescan': '🦠 File Scanner'
+        'fp-filescan': '🦠 File Scanner',
+        'fp-breachcheck': '💀 Breach Check',
+        'fp-abuseipdb': '🚨 AbuseIPDB',
+        'fp-ipinfo': '📡 IPinfo',
+        'fp-otx': '🛡 OTX',
+        'fp-shodan': '🌊 Shodan'
     };
 
     function getOverlapTarget(draggingEl, cx, cy) {

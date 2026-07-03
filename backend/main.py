@@ -435,4 +435,110 @@ async def virustotal_hash(request: Request):
         return {"error": str(e)}
 
 
+@app.get("/api/tools/breach-check")
+@limiter.limit("10/minute")
+async def proxy_breach_check(request: Request, email: str = ""):
+    email = email.strip()
+    if not email:
+        return {"error": "no_email"}
+    try:
+        resp = _requests.get(
+            f"https://api.xposedornot.com/v1/check-email/{email}",
+            headers={"User-Agent": "SentaurAI/1.0"},
+            timeout=10,
+        )
+        if resp.status_code == 404:
+            return {"breaches": []}
+        if not resp.ok:
+            return {"error": f"HTTP {resp.status_code}"}
+        return resp.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/tools/abuseipdb")
+@limiter.limit("20/minute")
+async def proxy_abuseipdb(request: Request, ip: str = ""):
+    ip = ip.strip()
+    if not ip:
+        return {"error": "no_ip"}
+    api_key = os.getenv("ABUSEIPDB_API_KEY", "")
+    if not api_key:
+        return {"error": "no_key"}
+    try:
+        resp = _requests.get(
+            "https://api.abuseipdb.com/api/v2/check",
+            params={"ipAddress": ip, "maxAgeInDays": 90, "verbose": True},
+            headers={"Key": api_key, "Accept": "application/json"},
+            timeout=10,
+        )
+        return resp.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/tools/ipinfo")
+@limiter.limit("30/minute")
+async def proxy_ipinfo(request: Request, ip: str = ""):
+    ip = ip.strip()
+    if not ip:
+        return {"error": "no_ip"}
+    api_key = os.getenv("IPINFO_TOKEN", "")
+    if not api_key:
+        return {"error": "no_key"}
+    try:
+        resp = _requests.get(
+            f"https://ipinfo.io/{ip}/json",
+            params={"token": api_key},
+            timeout=10,
+        )
+        return resp.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/tools/otx")
+@limiter.limit("20/minute")
+async def proxy_otx(request: Request, type: str = "ip", value: str = ""):
+    value = value.strip()
+    if not value:
+        return {"error": "no_value"}
+    api_key = os.getenv("OTX_API_KEY", "")
+    if not api_key:
+        return {"error": "no_key"}
+    type_map = {"ip": "IPv4", "domain": "domain", "hash": "file", "hostname": "hostname"}
+    otx_type = type_map.get(type, "IPv4")
+    try:
+        resp = _requests.get(
+            f"https://otx.alienvault.com/api/v1/indicators/{otx_type}/{value}/general",
+            headers={"X-OTX-API-KEY": api_key},
+            timeout=10,
+        )
+        return resp.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/tools/shodan")
+@limiter.limit("10/minute")
+async def proxy_shodan(request: Request, ip: str = ""):
+    ip = ip.strip()
+    if not ip:
+        return {"error": "no_ip"}
+    api_key = os.getenv("SHODAN_API_KEY", "")
+    if not api_key:
+        return {"error": "no_key"}
+    try:
+        resp = _requests.get(
+            f"https://api.shodan.io/shodan/host/{ip}",
+            params={"key": api_key},
+            timeout=12,
+        )
+        if resp.status_code == 404:
+            return {"error": "not_found"}
+        return resp.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

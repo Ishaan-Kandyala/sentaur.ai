@@ -207,7 +207,11 @@ body.dark .app-menu-btn:hover { background: rgba(255,255,255,0.08); }
     min-width: 200px;
     z-index: 200;
     animation: fadeIn 0.15s ease;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    scrollbar-width: none;
 }
+.app-menu-dropdown::-webkit-scrollbar { display: none; }
 
 .app-menu-dropdown.open { display: block; }
 
@@ -951,6 +955,8 @@ button, a, .suggestion-pill {
         transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
         display: block !important;
         z-index: 300;
+        max-height: 80vh;
+        overflow-y: auto;
     }
     .app-menu-dropdown::before {
         content: "";
