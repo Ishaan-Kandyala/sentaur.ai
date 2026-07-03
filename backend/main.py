@@ -519,21 +519,17 @@ async def proxy_otx(request: Request, type: str = "ip", value: str = ""):
         return {"error": str(e)}
 
 
-@app.get("/api/tools/censys")
-@limiter.limit("10/minute")
-async def proxy_censys(request: Request, ip: str = ""):
+@app.get("/api/tools/internetdb")
+@limiter.limit("30/minute")
+async def proxy_internetdb(request: Request, ip: str = ""):
     ip = ip.strip()
     if not ip:
         return {"error": "no_ip"}
-    api_id = os.getenv("CENSYS_API_ID", "")
-    api_secret = os.getenv("CENSYS_API_SECRET", "")
-    if not api_id or not api_secret:
-        return {"error": "no_key"}
     try:
         resp = _requests.get(
-            f"https://search.censys.io/api/v2/hosts/{ip}",
-            auth=(api_id, api_secret),
-            timeout=12,
+            f"https://internetdb.shodan.io/{ip}",
+            headers={"User-Agent": "SentaurAI/1.0"},
+            timeout=10,
         )
         if resp.status_code == 404:
             return {"error": "not_found"}
