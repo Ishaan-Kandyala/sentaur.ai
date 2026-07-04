@@ -435,6 +435,8 @@ body.dark .think-content {
     line-height: 1.5;
     margin: 8px 0;
     white-space: pre-wrap;
+    overflow-x: hidden;
+    overflow-wrap: break-word;
     word-break: break-all;
 }
 body.dark .bubble pre {
@@ -443,6 +445,9 @@ body.dark .bubble pre {
 .bubble code {
     font-family: "Menlo", "Consolas", "Monaco", monospace;
     font-size: 13px;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: break-all;
 }
 .bubble p code {
     background: rgba(0,0,0,0.07);
