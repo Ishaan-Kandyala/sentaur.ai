@@ -6,7 +6,7 @@ class WhiteRabbitProvider:
     def __init__(self):
         base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
         self.client = OpenAI(api_key="ollama", base_url=base_url)
-        self.model = "whiterabbitneo"
+        self.model = "WhiteRabbitNeo/WhiteRabbitNeo-V3-7B"
 
     def chat(self, messages):
         try:
