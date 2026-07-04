@@ -1075,7 +1075,7 @@ button, a, .suggestion-pill {
         width: 100%;
         border-radius: 20px 20px 0 0;
         padding: 0 12px calc(20px + env(safe-area-inset-bottom, 0px));
-        max-height: 310px;
+        max-height: 70vh;
         overflow-y: auto;
         scrollbar-width: none;
         z-index: 300;
