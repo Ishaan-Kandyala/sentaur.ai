@@ -6,7 +6,7 @@ class ZySecProvider:
     def __init__(self):
         base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
         self.client = OpenAI(api_key="ollama", base_url=base_url)
-        self.model = "hf.co/mradermacher/ZySec-7B-GGUF"
+        self.model = "hf.co/mradermacher/ZySec-7B-GGUF:Q4_K_M"
 
     def chat(self, messages):
         try:
