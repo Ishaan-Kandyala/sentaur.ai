@@ -37,6 +37,7 @@ from .providers.nvidia_provider import NvidiaProvider
 from .providers.zai_provider import ZaiProvider
 from .providers.mistral_provider import MistralProvider
 from .providers.whiterabbit_provider import WhiteRabbitProvider
+from .providers.zysec_provider import ZySecProvider
 
 # Named instances (reused across requests)
 _gemini = GeminiProvider()
@@ -50,6 +51,7 @@ _nvidia = NvidiaProvider()
 _zai = ZaiProvider()
 _mistral = MistralProvider()
 _whiterabbit = WhiteRabbitProvider()
+_zysec = ZySecProvider()
 
 PROVIDERS = [_gemini, _deepseek, _mistral, _openrouter, _groq, _cerebras, _sambanova, _nvidia, _zai, _local]
 
@@ -65,6 +67,7 @@ PROVIDER_MAP = {
     "zai": _zai,
     "mistral": _mistral,
     "whiterabbit": _whiterabbit,
+    "zysec": _zysec,
 }
 
 SYSTEM_PROMPT = """You are Sentaur AI — a friendly, expert assistant specialising in cybersecurity. 🤖
