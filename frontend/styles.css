@@ -207,7 +207,7 @@ body.dark .app-menu-btn:hover { background: rgba(255,255,255,0.08); }
     min-width: 200px;
     z-index: 200;
     animation: fadeIn 0.15s ease;
-    max-height: calc(100dvh - 155px);
+    max-height: calc(100dvh - 200px);
     overflow-y: auto;
     scrollbar-width: none;
 }
