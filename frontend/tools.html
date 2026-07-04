@@ -792,7 +792,7 @@ function switchTab(name, btn) {
     btn.classList.add('active');
     document.querySelectorAll('.tool-panel').forEach(p => p.classList.remove('active'));
     document.getElementById('panel-' + name).classList.add('active');
-    const hideScroll = name === 'regex' || name === 'threatintel' || name === 'filescan' || name === 'cipher' || name === 'abuseipdb' || name === 'ipinfo';
+    const hideScroll = name === 'regex' || name === 'threatintel' || name === 'filescan' || name === 'cipher' || name === 'abuseipdb' || name === 'ipinfo' || name === 'otx';
     document.body.classList.toggle('hide-scrollbar', hideScroll);
     document.documentElement.classList.toggle('hide-scrollbar', hideScroll);
 }
