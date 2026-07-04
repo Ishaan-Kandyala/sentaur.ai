@@ -675,7 +675,7 @@ body.dark .copilot-model-btn:hover { background: rgba(255,255,255,0.06); }
     min-width: 290px;
     z-index: 200;
     border: 1px solid var(--border);
-    max-height: calc(100dvh - 280px);
+    max-height: 310px;
     overflow-y: auto;
     scrollbar-width: none;
 }
@@ -1070,7 +1070,7 @@ button, a, .suggestion-pill {
         width: 100%;
         border-radius: 20px 20px 0 0;
         padding: 0 12px calc(20px + env(safe-area-inset-bottom, 0px));
-        max-height: 48vh;
+        max-height: 310px;
         overflow-y: auto;
         scrollbar-width: none;
         z-index: 300;
