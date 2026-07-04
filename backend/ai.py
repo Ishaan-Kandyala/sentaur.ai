@@ -49,7 +49,7 @@ _nvidia = NvidiaProvider()
 _zai = ZaiProvider()
 _mistral = MistralProvider()
 
-PROVIDERS = [_groq, _cerebras, _sambanova, _nvidia, _zai, _mistral, _gemini, _openrouter, _deepseek, _local]
+PROVIDERS = [_gemini, _deepseek, _mistral, _openrouter, _groq, _cerebras, _sambanova, _nvidia, _zai, _local]
 
 PROVIDER_MAP = {
     "gemini": _gemini,
