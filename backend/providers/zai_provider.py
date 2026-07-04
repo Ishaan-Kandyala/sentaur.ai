@@ -9,7 +9,7 @@ class ZaiProvider:
             api_key=api_key,
             base_url="https://api.z.ai/api/paas/v4/",
         ) if api_key else None
-        self.models = ["glm-4.7-flash", "glm-4.5-flash"]
+        self.models = ["glm-5.2", "glm-5-turbo", "glm-4.7-flash", "glm-4.5-flash"]
 
     def chat(self, messages):
         if not self.client:
