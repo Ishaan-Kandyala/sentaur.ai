@@ -207,18 +207,12 @@ body.dark .app-menu-btn:hover { background: rgba(255,255,255,0.08); }
     min-width: 200px;
     z-index: 200;
     animation: fadeIn 0.15s ease;
-    max-height: min(70vh, 560px);
-    overflow: hidden;
-    flex-direction: column;
-}
-.app-menu-dropdown.open { display: flex; }
-.ami-tools-scroll {
+    max-height: 55vh;
     overflow-y: auto;
     scrollbar-width: none;
-    flex: 1 1 auto;
-    min-height: 0;
 }
-.ami-tools-scroll::-webkit-scrollbar { display: none; }
+.app-menu-dropdown::-webkit-scrollbar { display: none; }
+.app-menu-dropdown.open { display: block; }
 
 .app-menu-item {
     display: flex;
@@ -958,11 +952,10 @@ button, a, .suggestion-pill {
         padding: 0 10px calc(16px + env(safe-area-inset-bottom, 0px));
         transform: translateY(110%);
         transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
-        display: flex !important;
-        flex-direction: column;
+        display: block !important;
         z-index: 300;
-        max-height: 70vh;
-        overflow: hidden;
+        max-height: 55vh;
+        overflow-y: auto;
     }
     .app-menu-dropdown::before {
         content: "";
