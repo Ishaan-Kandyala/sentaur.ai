@@ -35,6 +35,7 @@ from .providers.local_provider import LocalProvider
 from .providers.sambanova_provider import SambanovaProvider
 from .providers.nvidia_provider import NvidiaProvider
 from .providers.zai_provider import ZaiProvider
+from .providers.mistral_provider import MistralProvider
 
 # Named instances (reused across requests)
 _gemini = GeminiProvider()
@@ -46,8 +47,9 @@ _local = LocalProvider()
 _sambanova = SambanovaProvider()
 _nvidia = NvidiaProvider()
 _zai = ZaiProvider()
+_mistral = MistralProvider()
 
-PROVIDERS = [_groq, _cerebras, _sambanova, _nvidia, _zai, _gemini, _openrouter, _deepseek, _local]
+PROVIDERS = [_groq, _cerebras, _sambanova, _nvidia, _zai, _mistral, _gemini, _openrouter, _deepseek, _local]
 
 PROVIDER_MAP = {
     "gemini": _gemini,
@@ -59,6 +61,7 @@ PROVIDER_MAP = {
     "sambanova": _sambanova,
     "nvidia": _nvidia,
     "zai": _zai,
+    "mistral": _mistral,
 }
 
 SYSTEM_PROMPT = """You are Sentaur AI — a friendly, expert assistant specialising in cybersecurity. 🤖
