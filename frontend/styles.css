@@ -765,6 +765,32 @@ body.dark .copilot-model-btn:hover { background: rgba(255,255,255,0.06); }
 
 .copilot-send-btn:hover { background: #3a5ce5; transform: scale(1.05); }
 
+.copilot-interrupt-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #f07060;
+    border: none;
+    color: white;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, transform 0.1s;
+}
+.copilot-interrupt-btn:hover { background: #d95a4a; transform: scale(1.05); }
+
+.interrupted-label {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-style: italic;
+    color: #a0a0a0;
+    font-size: 14px;
+    display: block;
+    margin-top: 6px;
+}
+
 /* ── Model Switch Divider (in chat) ── */
 .model-option-icon img {
     width: 22px;

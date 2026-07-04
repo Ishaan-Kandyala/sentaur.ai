@@ -552,6 +552,21 @@ function addStreamingBotBubble() {
     return { bubble, textEl, thinkEl, copyBtn };
 }
 
+/* ── INTERRUPT ── */
+let _streamController = null;
+
+function showInterruptBtn() {
+    document.getElementById("sendBtn").style.display = "none";
+    document.getElementById("interruptBtn").style.display = "flex";
+}
+function hideInterruptBtn() {
+    document.getElementById("interruptBtn").style.display = "none";
+    document.getElementById("sendBtn").style.display = "flex";
+}
+function interruptMessage() {
+    if (_streamController) _streamController.abort();
+}
+
 /* ── SEND MESSAGE (streaming) ── */
 async function sendMessage() {
     const msgInput = document.getElementById("msg");
@@ -590,6 +605,9 @@ async function sendMessage() {
     }, 500);
     let thoughtDone = false;
 
+    _streamController = new AbortController();
+    showInterruptBtn();
+
     try {
         const res = await fetch(API + "/chat/stream", {
             method: "POST",
@@ -603,6 +621,7 @@ async function sendMessage() {
                 model_preference: localStorage.getItem("modelPreference") || "auto",
                 images: snapshotImages.map(i => ({ data: i.data, mime: i.mime })),
             }),
+            signal: _streamController.signal,
         });
 
         document.getElementById("typing").style.display = "none";
@@ -703,7 +722,17 @@ async function sendMessage() {
     } catch (e) {
         clearInterval(thinkTimer);
         document.getElementById("typing").style.display = "none";
-        bubble.textContent = "Connection error. Please try again.";
+        if (e.name === "AbortError") {
+            const label = document.createElement("em");
+            label.className = "interrupted-label";
+            label.textContent = "Interrupted";
+            bubble.appendChild(label);
+        } else {
+            bubble.textContent = "Connection error. Please try again.";
+        }
+    } finally {
+        hideInterruptBtn();
+        _streamController = null;
     }
 }
 
