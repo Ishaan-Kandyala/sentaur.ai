@@ -430,12 +430,12 @@ body.dark .think-content {
     background: rgba(0,0,0,0.06);
     border-radius: 8px;
     padding: 12px 14px;
-    overflow-x: auto;
     max-width: 100%;
     font-size: 13px;
     line-height: 1.5;
     margin: 8px 0;
-    white-space: pre;
+    white-space: pre-wrap;
+    word-break: break-all;
 }
 body.dark .bubble pre {
     background: rgba(255,255,255,0.07);
