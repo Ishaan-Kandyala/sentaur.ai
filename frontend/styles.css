@@ -208,12 +208,17 @@ body.dark .app-menu-btn:hover { background: rgba(255,255,255,0.08); }
     z-index: 200;
     animation: fadeIn 0.15s ease;
     max-height: calc(100vh - 80px);
+    overflow: hidden;
+    flex-direction: column;
+}
+.app-menu-dropdown.open { display: flex; }
+.ami-tools-scroll {
     overflow-y: auto;
     scrollbar-width: none;
+    flex: 1 1 auto;
+    min-height: 0;
 }
-.app-menu-dropdown::-webkit-scrollbar { display: none; }
-
-.app-menu-dropdown.open { display: block; }
+.ami-tools-scroll::-webkit-scrollbar { display: none; }
 
 .app-menu-item {
     display: flex;
