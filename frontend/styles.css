@@ -769,7 +769,7 @@ body.dark .copilot-model-btn:hover { background: rgba(255,255,255,0.06); }
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: #f07060;
+    background: #888;
     border: none;
     color: white;
     font-size: 13px;
@@ -780,7 +780,7 @@ body.dark .copilot-model-btn:hover { background: rgba(255,255,255,0.06); }
     flex-shrink: 0;
     transition: background 0.15s, transform 0.1s;
 }
-.copilot-interrupt-btn:hover { background: #d95a4a; transform: scale(1.05); }
+.copilot-interrupt-btn:hover { background: #666; transform: scale(1.05); }
 
 .interrupted-label {
     font-family: 'EB Garamond', Georgia, serif;
