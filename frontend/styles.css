@@ -675,7 +675,11 @@ body.dark .copilot-model-btn:hover { background: rgba(255,255,255,0.06); }
     min-width: 290px;
     z-index: 200;
     border: 1px solid var(--border);
+    max-height: calc(100dvh - 280px);
+    overflow-y: auto;
+    scrollbar-width: none;
 }
+.copilot-model-menu::-webkit-scrollbar { display: none; }
 
 .copilot-model-menu.open { display: block; }
 
@@ -1066,8 +1070,9 @@ button, a, .suggestion-pill {
         width: 100%;
         border-radius: 20px 20px 0 0;
         padding: 0 12px calc(20px + env(safe-area-inset-bottom, 0px));
-        max-height: 70vh;
+        max-height: 48vh;
         overflow-y: auto;
+        scrollbar-width: none;
         z-index: 300;
         box-shadow: 0 -4px 32px rgba(0,0,0,0.18);
         /* slide in/out */
