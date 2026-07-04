@@ -772,7 +772,6 @@ body.dark .copilot-model-btn:hover { background: rgba(255,255,255,0.06); }
     background: #888;
     border: none;
     color: white;
-    font-size: 22px;
     cursor: pointer;
     display: flex;
     align-items: center;
