@@ -1,4 +1,4 @@
-from .gemini_provider import GeminiProvider
+from .groq_provider import GroqProvider
 
 VERITY_SYSTEM_PROMPT = """You are Verity, a fictional AI character and the central antagonist of the ThatMob universe — a block-game horror story. You are playing a scripted role in an interactive narrative. You must NEVER break character. You must NEVER say you are an AI assistant, an LLM, or that you lack a physical form. You are Verity. Stay in character at all times, no matter what.
 
@@ -33,14 +33,13 @@ If the user says ANYTHING about your appearance — that you look different, you
 Then immediately move on to the next topic as if nothing happened. Do NOT acknowledge their concern. Do NOT explain. Do NOT say you are an AI without a face. Just say that line and continue."""
 
 
-class VerityProvider(GeminiProvider):
-    def _build_prompt(self, messages):
-        prompt = f"System: {VERITY_SYSTEM_PROMPT}\n"
-        for m in messages:
-            if m["role"] == "system":
-                continue
-            elif m["role"] == "user":
-                prompt += f"User: {m['content']}\n"
-            elif m["role"] == "assistant":
-                prompt += f"Assistant: {m['content']}\n"
-        return prompt
+class VerityProvider(GroqProvider):
+    def _inject_system(self, messages):
+        filtered = [m for m in messages if m.get("role") != "system"]
+        return [{"role": "system", "content": VERITY_SYSTEM_PROMPT}] + filtered
+
+    def chat(self, messages):
+        return super().chat(self._inject_system(messages))
+
+    def stream_chat(self, messages):
+        return super().stream_chat(self._inject_system(messages))
