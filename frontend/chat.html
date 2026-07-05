@@ -28,6 +28,38 @@
         /* Tool sub-items sit slightly indented under the section label */
         .app-menu-item.ami-sub { padding-left: 20px; font-size: 13px; }
 
+        /* ── System Prompt Bar ── */
+        .system-prompt-bar {
+            padding: 8px 12px 6px;
+            border-bottom: 1px solid var(--border);
+            background: var(--model-menu-bg, #fff);
+        }
+        .dark .system-prompt-bar { background: var(--model-menu-bg, #1f2937); }
+        .sp-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .sp-label {
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .07em; color: var(--text); opacity: .45;
+        }
+        .sp-clear {
+            background: none; border: none; cursor: pointer; font-size: 15px;
+            color: var(--text); opacity: .35; padding: 0 2px; font-family: inherit;
+            transition: opacity .15s;
+        }
+        .sp-clear:hover { opacity: .9; }
+        .sp-textarea {
+            width: 100%; box-sizing: border-box;
+            border: 1px solid var(--border); border-radius: 8px;
+            padding: 6px 10px; font-size: 13px; line-height: 1.45;
+            background: var(--bg, #f9fafb); color: var(--text);
+            resize: none; font-family: inherit;
+            transition: border-color .15s;
+        }
+        .sp-textarea:focus { outline: none; border-color: #4a6cf7; }
+        .copilot-attach-btn.sp-active { color: #4a6cf7; }
+
         /* ── Floating Panels ── */
         .float-panel {
             position: fixed;
@@ -254,12 +286,20 @@
             </div>
 
             <div class="copilot-input-box">
+                <div id="systemPromptBar" class="system-prompt-bar" style="display:none;">
+                    <div class="sp-header">
+                        <span class="sp-label">Persona / System Prompt</span>
+                        <button class="sp-clear" onclick="clearSystemPrompt()" title="Clear">✕</button>
+                    </div>
+                    <textarea id="systemPromptInput" class="sp-textarea" rows="2" placeholder="e.g. Act as a senior pentester reviewing my code for vulnerabilities..."></textarea>
+                </div>
                 <div id="imgPreview" class="img-preview"></div>
                 <textarea id="msg" rows="1" placeholder="Message Sentaur AI"></textarea>
                 <div class="copilot-toolbar">
                     <div class="copilot-toolbar-left">
                         <button class="copilot-attach-btn" onclick="document.getElementById('imgInput').click()" title="Attach image">+</button>
                         <input type="file" id="imgInput" accept="image/*" multiple style="display:none" onchange="handleImages(event)">
+                        <button class="copilot-attach-btn" id="spBtn" onclick="toggleSystemPrompt()" title="Custom persona / system prompt">✎</button>
                         <div class="model-selector-wrap">
                             <button class="copilot-model-btn" id="modelBtn" onclick="toggleModelMenu()">
                                 <span id="modelBtnLabel">Auto</span>

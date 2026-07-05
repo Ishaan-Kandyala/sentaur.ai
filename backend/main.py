@@ -68,6 +68,7 @@ class ChatIn(BaseModel):
     image_data: Optional[str] = None
     image_mime: Optional[str] = None
     images: Optional[List[dict]] = None  # [{data, mime}, ...]
+    system_prompt: Optional[str] = None
 
 
 class ChatOut(BaseModel):
@@ -93,6 +94,8 @@ def chat_stream(request: Request, req: ChatIn, db: Session = Depends(get_db), us
     convo = _get_or_create_convo(db, user, req.conversation_id)
 
     messages = build_history(db, convo.id)
+    if req.system_prompt and req.system_prompt.strip():
+        messages[0]["content"] += f"\n\nAdditional instructions from the user:\n{req.system_prompt.strip()}"
     messages.append({"role": "user", "content": req.message})
 
     tool_answer = maybe_handle_tools(db, user, req.message, messages)

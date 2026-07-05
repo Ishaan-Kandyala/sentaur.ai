@@ -620,6 +620,7 @@ async function sendMessage() {
                 conversation_id: currentConversationId,
                 model_preference: localStorage.getItem("modelPreference") || "auto",
                 images: snapshotImages.map(i => ({ data: i.data, mime: i.mime })),
+                system_prompt: document.getElementById("systemPromptInput")?.value.trim() || null,
             }),
             signal: _streamController.signal,
         });
@@ -735,6 +736,44 @@ async function sendMessage() {
         _streamController = null;
     }
 }
+
+/* ── SYSTEM PROMPT / PERSONA ── */
+function toggleSystemPrompt() {
+    const bar = document.getElementById("systemPromptBar");
+    const btn = document.getElementById("spBtn");
+    if (!bar) return;
+    const opening = bar.style.display === "none";
+    bar.style.display = opening ? "block" : "none";
+    btn && btn.classList.toggle("sp-active", opening);
+    if (opening) document.getElementById("systemPromptInput")?.focus();
+}
+
+function clearSystemPrompt() {
+    const input = document.getElementById("systemPromptInput");
+    if (input) input.value = "";
+    localStorage.removeItem("systemPrompt");
+    const bar = document.getElementById("systemPromptBar");
+    if (bar) bar.style.display = "none";
+    document.getElementById("spBtn")?.classList.remove("sp-active");
+}
+
+(function initSystemPrompt() {
+    const saved = localStorage.getItem("systemPrompt");
+    const input = document.getElementById("systemPromptInput");
+    const bar   = document.getElementById("systemPromptBar");
+    const btn   = document.getElementById("spBtn");
+    if (!input) return;
+    if (saved) {
+        input.value = saved;
+        if (bar) bar.style.display = "block";
+        if (btn) btn.classList.add("sp-active");
+    }
+    input.addEventListener("input", function () {
+        const val = this.value.trim();
+        if (val) localStorage.setItem("systemPrompt", val);
+        else     localStorage.removeItem("systemPrompt");
+    });
+})();
 
 /* ── INIT ── */
 if (document.getElementById("chatbox")) {
