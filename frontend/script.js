@@ -158,30 +158,45 @@ function _stripForSpeech(text) {
         .trim();
 }
 
-function _veritySpeak(text) {
-    if (_verityVoiceMuted || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const clean = _stripForSpeech(text);
-    if (!clean) return;
-
+function _veritySpeakWebSpeech(clean) {
+    if (!window.speechSynthesis) return;
     _loadVerityVoiceSettings();
     const s = _verityVoiceSettings;
     const utt = new SpeechSynthesisUtterance(clean);
-
-    if (_verityMsgCount <= 3) {
-        utt.pitch = s.p1Pitch;
-        utt.rate  = s.p1Rate;
-    } else {
-        utt.pitch = s.p2Pitch;
-        utt.rate  = s.p2Rate;
-    }
-
+    if (_verityMsgCount <= 3) { utt.pitch = s.p1Pitch; utt.rate = s.p1Rate; }
+    else                      { utt.pitch = s.p2Pitch; utt.rate = s.p2Rate; }
     const picked = s.voice
         ? _cachedVoices.find(v => v.name === s.voice)
         : _cachedVoices.find(v => /samantha|karen|victoria|zira|google uk english female/i.test(v.name));
     if (picked) utt.voice = picked;
-
     window.speechSynthesis.speak(utt);
+}
+
+async function _veritySpeak(text) {
+    if (_verityVoiceMuted) return;
+    window.speechSynthesis?.cancel();
+    if (window._verityAudio) { window._verityAudio.pause(); window._verityAudio = null; }
+
+    const clean = _stripForSpeech(text);
+    if (!clean) return;
+
+    const phase = _verityMsgCount <= 3 ? 1 : 2;
+
+    try {
+        const res = await fetch("/verity/speak", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + getToken() },
+            body: JSON.stringify({ text: clean, phase }),
+        });
+        if (!res.ok) throw new Error("no_key");
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        window._verityAudio = new Audio(url);
+        window._verityAudio.onended = () => URL.revokeObjectURL(url);
+        window._verityAudio.play();
+    } catch (_) {
+        _veritySpeakWebSpeech(clean);
+    }
 }
 
 /* ── VERITY VOICE TUNING ── */
@@ -247,7 +262,10 @@ function previewVerityVoice() {
 
 function toggleVerityVoice() {
     _verityVoiceMuted = !_verityVoiceMuted;
-    if (_verityVoiceMuted) window.speechSynthesis?.cancel();
+    if (_verityVoiceMuted) {
+        window.speechSynthesis?.cancel();
+        if (window._verityAudio) { window._verityAudio.pause(); window._verityAudio = null; }
+    }
     const btn = document.getElementById("verityVoiceBtn");
     if (btn) {
         btn.textContent = _verityVoiceMuted ? "🔇" : "🔊";

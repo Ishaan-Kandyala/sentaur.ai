@@ -541,4 +541,37 @@ async def proxy_internetdb(request: Request, ip: str = ""):
         return {"error": str(e)}
 
 
+@app.post("/verity/speak")
+@limiter.limit("30/minute")
+async def verity_speak(request: Request):
+    body = await request.json()
+    text  = (body.get("text") or "").strip()[:2500]
+    phase = int(body.get("phase", 1))
+    if not text:
+        return {"error": "no_text"}
+
+    api_key  = os.getenv("ELEVENLABS_API_KEY", "")
+    voice_id = os.getenv("ELEVENLABS_VOICE_ID", "")
+    if not api_key or not voice_id:
+        return {"error": "no_key"}
+
+    # Phase 1 = expressive/cheerful, Phase 2 = flat/unsettling
+    if phase >= 2:
+        settings = {"stability": 0.85, "similarity_boost": 0.90, "style": 0.0, "use_speaker_boost": False}
+    else:
+        settings = {"stability": 0.30, "similarity_boost": 0.75, "style": 0.60, "use_speaker_boost": True}
+
+    resp = _requests.post(
+        f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
+        headers={"xi-api-key": api_key, "Content-Type": "application/json"},
+        json={"text": text, "model_id": "eleven_multilingual_v2", "voice_settings": settings},
+        stream=True,
+        timeout=30,
+    )
+    if not resp.ok:
+        return {"error": f"elevenlabs_{resp.status_code}"}
+
+    return StreamingResponse(resp.iter_content(chunk_size=4096), media_type="audio/mpeg")
+
+
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
