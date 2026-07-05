@@ -55,7 +55,7 @@ _whiterabbit = WhiteRabbitProvider()
 _zysec = ZySecProvider()
 _verity = VerityProvider()
 
-PROVIDERS = [_gemini, _deepseek, _mistral, _openrouter, _groq, _cerebras, _sambanova, _nvidia, _zai, _local]
+PROVIDERS = [_groq, _cerebras, _deepseek, _mistral, _openrouter, _gemini, _sambanova, _nvidia, _zai, _local]
 
 PROVIDER_MAP = {
     "gemini": _gemini,
