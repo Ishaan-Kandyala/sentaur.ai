@@ -123,8 +123,11 @@ function toggleModelMenu() {
 function updatePlaceholder(model) {
     const ta = document.getElementById("msg");
     if (ta) ta.placeholder = model === "verity" ? "Message Verity" : "Message Sentaur AI";
-    const vBtn = document.getElementById("verityVoiceBtn");
-    if (vBtn) vBtn.style.display = model === "verity" ? "inline-flex" : "none";
+    const isVerity = model === "verity";
+    ["verityVoiceBtn", "verityTuneBtn"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = isVerity ? "inline-flex" : "none";
+    });
 }
 
 /* ── VERITY VOICE (Web Speech API) ── */
@@ -132,7 +135,10 @@ let _verityVoiceMuted = false;
 let _cachedVoices = [];
 
 if (window.speechSynthesis) {
-    const _loadVoices = () => { _cachedVoices = window.speechSynthesis.getVoices(); };
+    const _loadVoices = () => {
+        _cachedVoices = window.speechSynthesis.getVoices();
+        _populateVerityVoiceSelect();
+    };
     _loadVoices();
     window.speechSynthesis.onvoiceschanged = _loadVoices;
 }
@@ -158,22 +164,85 @@ function _veritySpeak(text) {
     const clean = _stripForSpeech(text);
     if (!clean) return;
 
+    _loadVerityVoiceSettings();
+    const s = _verityVoiceSettings;
     const utt = new SpeechSynthesisUtterance(clean);
 
     if (_verityMsgCount <= 3) {
-        utt.pitch = 1.25;
-        utt.rate  = 1.05;
+        utt.pitch = s.p1Pitch;
+        utt.rate  = s.p1Rate;
     } else {
-        utt.pitch = 0.55;
-        utt.rate  = 0.78;
+        utt.pitch = s.p2Pitch;
+        utt.rate  = s.p2Rate;
     }
 
-    const preferred = _cachedVoices.find(v =>
-        /samantha|karen|victoria|zira|female|google uk english female/i.test(v.name)
-    );
-    if (preferred) utt.voice = preferred;
+    const picked = s.voice
+        ? _cachedVoices.find(v => v.name === s.voice)
+        : _cachedVoices.find(v => /samantha|karen|victoria|zira|google uk english female/i.test(v.name));
+    if (picked) utt.voice = picked;
 
     window.speechSynthesis.speak(utt);
+}
+
+/* ── VERITY VOICE TUNING ── */
+const _verityDefaults = { voice: "", p1Pitch: 1.25, p1Rate: 1.05, p2Pitch: 0.55, p2Rate: 0.78 };
+let _verityVoiceSettings = { ..._verityDefaults };
+
+function _loadVerityVoiceSettings() {
+    try {
+        const saved = JSON.parse(localStorage.getItem("verityVoiceSettings") || "{}");
+        _verityVoiceSettings = { ..._verityDefaults, ...saved };
+    } catch (_) {}
+}
+
+function saveVerityVoiceSettings() {
+    _verityVoiceSettings.voice   = document.getElementById("verityVoiceSelect")?.value || "";
+    _verityVoiceSettings.p1Pitch = parseFloat(document.getElementById("p1Pitch")?.value) || _verityDefaults.p1Pitch;
+    _verityVoiceSettings.p1Rate  = parseFloat(document.getElementById("p1Rate")?.value)  || _verityDefaults.p1Rate;
+    _verityVoiceSettings.p2Pitch = parseFloat(document.getElementById("p2Pitch")?.value) || _verityDefaults.p2Pitch;
+    _verityVoiceSettings.p2Rate  = parseFloat(document.getElementById("p2Rate")?.value)  || _verityDefaults.p2Rate;
+    localStorage.setItem("verityVoiceSettings", JSON.stringify(_verityVoiceSettings));
+}
+
+function updateVerityLabel(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = "(" + parseFloat(val).toFixed(2) + ")";
+}
+
+function _populateVerityVoiceSelect() {
+    const sel = document.getElementById("verityVoiceSelect");
+    if (!sel) return;
+    sel.innerHTML = "";
+    _cachedVoices.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v.name;
+        opt.textContent = v.name + (v.localService ? "" : " ·");
+        if (v.name === _verityVoiceSettings.voice) opt.selected = true;
+        sel.appendChild(opt);
+    });
+}
+
+function _syncVerityTuneUI() {
+    _loadVerityVoiceSettings();
+    _populateVerityVoiceSelect();
+    const map = { p1Pitch: "p1Pitch", p1Rate: "p1Rate", p2Pitch: "p2Pitch", p2Rate: "p2Rate" };
+    Object.entries(map).forEach(([key, id]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = _verityVoiceSettings[key];
+        updateVerityLabel(id + "Val", _verityVoiceSettings[key]);
+    });
+}
+
+function toggleVerityTune() {
+    const panel = document.getElementById("verityTunePanel");
+    if (!panel) return;
+    const opening = panel.style.display === "none";
+    panel.style.display = opening ? "block" : "none";
+    if (opening) _syncVerityTuneUI();
+}
+
+function previewVerityVoice() {
+    _veritySpeak("Hello!~ I'm Verity, your personal helper friend. Ask me anything, I know everything.");
 }
 
 function toggleVerityVoice() {
