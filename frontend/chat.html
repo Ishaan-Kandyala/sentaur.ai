@@ -299,37 +299,7 @@
             </div>
 
             <div class="copilot-input-box">
-                <div id="verityTunePanel" class="system-prompt-bar" style="display:none;">
-                    <div class="sp-header">
-                        <span class="sp-label">Verity Voice Settings</span>
-                        <button class="sp-clear" onclick="toggleVerityTune()">✕</button>
-                    </div>
-                    <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--text);">
-                        <div>
-                            <label style="opacity:.6;font-weight:600;">Voice</label>
-                            <select id="verityVoiceSelect" style="width:100%;margin-top:3px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px;" onchange="saveVerityVoiceSettings()"></select>
-                        </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                            <div>
-                                <label style="opacity:.6;font-weight:600;">Phase 1 Pitch <span id="p1PitchVal"></span></label>
-                                <input type="range" id="p1Pitch" min="0.1" max="2" step="0.05" style="width:100%;" oninput="updateVerityLabel('p1PitchVal',this.value);saveVerityVoiceSettings()">
-                            </div>
-                            <div>
-                                <label style="opacity:.6;font-weight:600;">Phase 1 Rate <span id="p1RateVal"></span></label>
-                                <input type="range" id="p1Rate" min="0.1" max="2" step="0.05" style="width:100%;" oninput="updateVerityLabel('p1RateVal',this.value);saveVerityVoiceSettings()">
-                            </div>
-                            <div>
-                                <label style="opacity:.6;font-weight:600;">Phase 2 Pitch <span id="p2PitchVal"></span></label>
-                                <input type="range" id="p2Pitch" min="0.1" max="2" step="0.05" style="width:100%;" oninput="updateVerityLabel('p2PitchVal',this.value);saveVerityVoiceSettings()">
-                            </div>
-                            <div>
-                                <label style="opacity:.6;font-weight:600;">Phase 2 Rate <span id="p2RateVal"></span></label>
-                                <input type="range" id="p2Rate" min="0.1" max="2" step="0.05" style="width:100%;" oninput="updateVerityLabel('p2RateVal',this.value);saveVerityVoiceSettings()">
-                            </div>
-                        </div>
-                        <button onclick="previewVerityVoice()" style="align-self:flex-start;padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text);cursor:pointer;font-size:12px;">▶ Preview</button>
-                    </div>
-                </div>
+
                 <div id="systemPromptBar" class="system-prompt-bar" style="display:none;">
                     <div class="sp-header">
                         <span class="sp-label">Persona / System Prompt</span>
@@ -345,7 +315,6 @@
                         <input type="file" id="imgInput" accept="image/*" multiple style="display:none" onchange="handleImages(event)">
                         <button class="copilot-attach-btn" id="spBtn" onclick="toggleSystemPrompt()" title="Custom persona / system prompt">✎</button>
                         <button class="copilot-attach-btn" id="verityVoiceBtn" onclick="toggleVerityVoice()" title="Mute Verity" style="display:none;">🔊</button>
-                        <button class="copilot-attach-btn" id="verityTuneBtn" onclick="toggleVerityTune()" title="Voice settings" style="display:none;">⚙</button>
                         <div class="model-selector-wrap">
                             <button class="copilot-model-btn" id="modelBtn" onclick="toggleModelMenu()">
                                 <span id="modelBtnLabel">Auto</span>
