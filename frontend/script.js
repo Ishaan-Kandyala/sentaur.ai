@@ -123,6 +123,67 @@ function toggleModelMenu() {
 function updatePlaceholder(model) {
     const ta = document.getElementById("msg");
     if (ta) ta.placeholder = model === "verity" ? "Message Verity" : "Message Sentaur AI";
+    const vBtn = document.getElementById("verityVoiceBtn");
+    if (vBtn) vBtn.style.display = model === "verity" ? "inline-flex" : "none";
+}
+
+/* ── VERITY VOICE (Web Speech API) ── */
+let _verityVoiceMuted = false;
+let _cachedVoices = [];
+
+if (window.speechSynthesis) {
+    const _loadVoices = () => { _cachedVoices = window.speechSynthesis.getVoices(); };
+    _loadVoices();
+    window.speechSynthesis.onvoiceschanged = _loadVoices;
+}
+
+function _stripForSpeech(text) {
+    return text
+        .replace(/<think>[\s\S]*?<\/think>/gi, "")
+        .replace(/```[\s\S]*?```/g, "")
+        .replace(/`[^`]+`/g, "")
+        .replace(/#{1,6}\s/g, "")
+        .replace(/\*\*([^*]+)\*\*/g, "$1")
+        .replace(/\*([^*]+)\*/g, "$1")
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+        .replace(/[-*+]\s/g, "")
+        .replace(/>\s/g, "")
+        .replace(/[~_]/g, "")
+        .trim();
+}
+
+function _veritySpeak(text) {
+    if (_verityVoiceMuted || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const clean = _stripForSpeech(text);
+    if (!clean) return;
+
+    const utt = new SpeechSynthesisUtterance(clean);
+
+    if (_verityMsgCount <= 3) {
+        utt.pitch = 1.25;
+        utt.rate  = 1.05;
+    } else {
+        utt.pitch = 0.55;
+        utt.rate  = 0.78;
+    }
+
+    const preferred = _cachedVoices.find(v =>
+        /samantha|karen|victoria|zira|female|google uk english female/i.test(v.name)
+    );
+    if (preferred) utt.voice = preferred;
+
+    window.speechSynthesis.speak(utt);
+}
+
+function toggleVerityVoice() {
+    _verityVoiceMuted = !_verityVoiceMuted;
+    if (_verityVoiceMuted) window.speechSynthesis?.cancel();
+    const btn = document.getElementById("verityVoiceBtn");
+    if (btn) {
+        btn.textContent = _verityVoiceMuted ? "🔇" : "🔊";
+        btn.title = _verityVoiceMuted ? "Unmute Verity" : "Mute Verity";
+    }
 }
 
 function selectModel(el) {
@@ -744,6 +805,10 @@ async function sendMessage() {
             copyBtn.textContent = "Copied!";
             setTimeout(() => (copyBtn.textContent = "Copy"), 2000);
         };
+
+        if (localStorage.getItem("modelPreference") === "verity") {
+            _veritySpeak(fullText);
+        }
     } catch (e) {
         clearInterval(thinkTimer);
         document.getElementById("typing").style.display = "none";
