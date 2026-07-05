@@ -120,6 +120,11 @@ function toggleModelMenu() {
     isOpen ? closeModelMenu() : openModelMenu();
 }
 
+function updatePlaceholder(model) {
+    const ta = document.getElementById("msg");
+    if (ta) ta.placeholder = model === "verity" ? "Message Verity" : "Message Sentaur AI";
+}
+
 function selectModel(el) {
     const value = el.dataset.model;
     const label = el.dataset.label;
@@ -130,6 +135,7 @@ function selectModel(el) {
     el.classList.add("active");
     closeModelMenu();
     insertModelDivider(label);
+    updatePlaceholder(value);
 }
 
 function insertModelDivider(label) {
@@ -163,6 +169,7 @@ document.addEventListener("click", function (e) {
         document.querySelectorAll(".model-option").forEach((o) => o.classList.remove("active"));
         option.classList.add("active");
     }
+    updatePlaceholder(saved);
 })();
 
 /* ── MOBILE SIDEBAR ── */
