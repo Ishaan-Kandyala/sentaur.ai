@@ -462,17 +462,7 @@ function createBotAvatar() {
     const avatar = document.createElement("div");
     avatar.className = "avatar bot-avatar";
     const model = localStorage.getItem("modelPreference") || "auto";
-    if (model === "verity") {
-        avatar.style.background = "transparent";
-        avatar.style.padding = "0";
-        avatar.style.overflow = "hidden";
-        const img = document.createElement("img");
-        img.src = "/HelloImVerity.webp";
-        img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;";
-        avatar.appendChild(img);
-    } else {
-        avatar.textContent = "S";
-    }
+    avatar.textContent = model === "verity" ? "🙂" : "S";
     return avatar;
 }
 
