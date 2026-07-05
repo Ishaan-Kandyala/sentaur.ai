@@ -467,14 +467,10 @@ function createBotAvatar() {
     avatar.className = "avatar bot-avatar";
     const model = localStorage.getItem("modelPreference") || "auto";
     if (model === "verity") {
-        if (_verityMsgCount >= 3) {
-            avatar.classList.add("verity-p2");
-            const img = document.createElement("img");
-            img.src = "/Verity%202nd%20phase.png";
-            avatar.appendChild(img);
-        } else {
-            avatar.textContent = "🙂";
-        }
+        avatar.classList.add("verity-p2");
+        const img = document.createElement("img");
+        img.src = _verityMsgCount >= 3 ? "/Verity%202nd%20phase.png" : "/HelloImVerity.webp";
+        avatar.appendChild(img);
         _verityMsgCount++;
     } else {
         avatar.textContent = "S";
