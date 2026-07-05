@@ -469,7 +469,7 @@ function autoGrow(el) {
 /* ── BOT AVATAR ── */
 let _verityMsgCount = 0;
 
-function createBotAvatar() {
+function createBotAvatar(countThisMessage = false) {
     const avatar = document.createElement("div");
     avatar.className = "avatar bot-avatar";
     const model = localStorage.getItem("modelPreference") || "auto";
@@ -478,7 +478,7 @@ function createBotAvatar() {
         const img = document.createElement("img");
         img.src = _verityMsgCount >= 3 ? "/Verity%202nd%20phase.png" : "/HelloImVerity.webp";
         avatar.appendChild(img);
-        _verityMsgCount++;
+        if (countThisMessage) _verityMsgCount++;
     } else {
         avatar.textContent = "S";
     }
@@ -541,7 +541,7 @@ function addStreamingBotBubble() {
     const row = document.createElement("div");
     row.className = "msg-row bot";
 
-    const avatar = createBotAvatar();
+    const avatar = createBotAvatar(true);
 
     const wrapper = document.createElement("div");
     wrapper.className = "bubble-wrapper";
