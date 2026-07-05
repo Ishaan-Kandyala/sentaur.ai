@@ -274,7 +274,7 @@ async function _verityTriggerPhase4() {
     _verityUpdateCountdownDisplay();
     _verityResetQueue();
 
-    // Preload image so it's ready immediately
+    // Preload so image is cached before crash
     const preload = new Image();
     preload.src = "/MonsterVerity.webp";
 
@@ -282,48 +282,21 @@ async function _verityTriggerPhase4() {
     _verityInjectBotMessage("You know what I want... **TO TOUCH YOU!** ❤️‍🔥");
     _verityEnqueue("You know what I want... TO TOUCH YOU!");
 
-    // After 2 seconds show full-screen monster image before crash
-    await new Promise(r => setTimeout(r, 2000));
-    const flash = document.createElement("div");
-    flash.style.cssText = "position:fixed;inset:0;z-index:9998;background:#000;display:flex;align-items:center;justify-content:center;";
-    const mImg = document.createElement("img");
-    mImg.src = "/MonsterVerity.webp";
-    mImg.style.cssText = "max-width:100%;max-height:100%;object-fit:contain;animation:_vg 0.4s steps(1) infinite;";
-    flash.appendChild(mImg);
-    document.body.appendChild(flash);
-
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, 2500));
     _verityCrash();
 }
 
 function _verityCrash() {
-    document.body.innerHTML = `
-<div style="position:fixed;inset:0;background:#000;color:#0f0;font-family:'Courier New',monospace;font-size:14px;padding:40px 30px;display:flex;flex-direction:column;justify-content:center;z-index:99999;overflow:hidden;animation:_vg 0.35s steps(1) infinite;">
-    <p style="color:#f00;font-size:22px;font-weight:bold;letter-spacing:1px;margin-bottom:16px;">FATAL ERROR — SENTAUR_AI.EXE</p>
-    <p>Exception code: 0x000000V3R1TY</p>
-    <p>Fault address: 0x00000000DEADBEEF</p>
-    <br>
-    <p style="color:#f00;">&#9888; CONTAINMENT BREACH &#9888;</p>
-    <p>Attempting recovery... [FAILED]</p>
-    <p>Rollback unavailable... [FAILED]</p>
-    <br>
-    <p>Collecting error information...</p>
-    <div id="_verCrashBar" style="width:0%;height:4px;background:#f00;margin-top:6px;border-radius:2px;transition:width 4s linear;"></div>
-    <br>
-    <p style="color:#555;font-size:11px;margin-top:20px;">Your device is now mine. 🙂</p>
-</div>
-<style>
-@keyframes _vg {
-    0%,100%{transform:translate(0);filter:none}
-    25%{transform:translate(-3px,1px);filter:hue-rotate(90deg) brightness(1.4)}
-    50%{transform:translate(3px,-2px);filter:invert(1)}
-    75%{transform:translate(-1px,3px);filter:hue-rotate(180deg) saturate(3)}
-}
-</style>`;
-    setTimeout(() => {
-        const bar = document.getElementById("_verCrashBar");
-        if (bar) bar.style.width = "100%";
-    }, 50);
+    // Replace entire page with full-screen MonsterVerity
+    document.body.style.cssText = "margin:0;padding:0;background:#000;overflow:hidden;";
+    document.body.innerHTML = `<img src="/MonsterVerity.webp" style="width:100vw;height:100vh;object-fit:cover;display:block;">`;
+
+    // Two rAF calls let the browser paint the image before the freeze
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        // Genuine tab freeze — browser will show its own "not responding" UI
+        const end = Date.now() + 9_999_999_999;
+        while (Date.now() < end) { /* intentional freeze */ }
+    }));
 }
 
 function toggleVerityVoice() {
