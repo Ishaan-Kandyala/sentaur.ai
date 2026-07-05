@@ -1,5 +1,11 @@
 const API = "";
 
+/* ── VERITY PHASE STATE (declared early to avoid TDZ in initModel IIFE) ── */
+let _verityMsgCount    = 0;
+let _verityPhase4Active = false;
+let _verityCountdown    = -1;
+let _verityAutoMsgSent  = false;
+
 /* ── iOS Safari / Android keyboard viewport fix ──
    Sets --vh based on the actual visible viewport so the layout
    shrinks correctly when the virtual keyboard opens.          */
@@ -125,6 +131,8 @@ function updatePlaceholder(model) {
     if (ta) ta.placeholder = model === "verity" ? "Message Verity" : "Message Sentaur AI";
     const vBtn = document.getElementById("verityVoiceBtn");
     if (vBtn) vBtn.style.display = model === "verity" ? "inline-flex" : "none";
+    _verityApplyBodyClass();
+    if (model !== "verity") _verityUpdateCountdownDisplay();
 }
 
 /* ── VERITY VOICE ── */
@@ -169,7 +177,7 @@ async function _verityPlayNext() {
     if (_verityVoiceMuted || _verityQueue.length === 0) { _verityQueueBusy = false; return; }
     _verityQueueBusy = true;
     const text  = _verityQueue.shift();
-    const phase = _verityMsgCount <= 3 ? 1 : 2;
+    const phase = _verityMsgCount <= 3 ? 1 : _verityMsgCount <= 7 ? 2 : 3;
     try {
         const res = await fetch("/verity/speak", {
             method: "POST",
@@ -184,8 +192,8 @@ async function _verityPlayNext() {
         window._verityAudio.play();
     } catch (_) {
         const utt = new SpeechSynthesisUtterance(text);
-        utt.pitch = phase === 1 ? 1.25 : 0.55;
-        utt.rate  = phase === 1 ? 1.05 : 0.78;
+        utt.pitch = phase === 1 ? 1.25 : phase === 2 ? 0.55 : 0.28;
+        utt.rate  = phase === 1 ? 1.05 : phase === 2 ? 0.78 : 0.62;
         const v = _cachedVoices.find(v => /samantha|karen|victoria|zira|google uk english female/i.test(v.name));
         if (v) utt.voice = v;
         utt.onend = () => _verityPlayNext();
@@ -212,6 +220,93 @@ function _verityFeedText(responseText) {
 
 function _verityFlush() {
     if (_veritySentBuf.trim()) { _verityEnqueue(_veritySentBuf); _veritySentBuf = ""; }
+}
+
+function _verityApplyBodyClass() {
+    const isVerity = localStorage.getItem("modelPreference") === "verity";
+    document.body.classList.toggle("verity-p3", isVerity && _verityMsgCount >= 7);
+}
+
+function _verityUpdateCountdownDisplay() {
+    const el = document.getElementById("verityCountdownDisplay");
+    if (!el) return;
+    if (_verityCountdown > 0) {
+        el.textContent = `Messages remaining: ${_verityCountdown}`;
+        el.style.display = "inline";
+    } else {
+        el.style.display = "none";
+    }
+}
+
+function _verityInjectBotMessage(text) {
+    const box = document.getElementById("chatbox");
+    const row = document.createElement("div");
+    row.className = "msg-row bot";
+    const avatar = createBotAvatar(false);
+    const wrapper = document.createElement("div");
+    wrapper.className = "bubble-wrapper";
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.innerHTML = marked.parse(text);
+    wrapper.appendChild(bubble);
+    row.appendChild(avatar);
+    row.appendChild(wrapper);
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+}
+
+function _verityCheckMilestones() {
+    _verityApplyBodyClass();
+    if (_verityMsgCount >= 12 && !_verityAutoMsgSent) {
+        _verityAutoMsgSent = true;
+        _verityCountdown = 3;
+        setTimeout(() => {
+            _verityInjectBotMessage("Something is coming in 3 messages... 🙂");
+            _verityUpdateCountdownDisplay();
+            _verityEnqueue("Something is coming in 3 messages.");
+        }, 1500);
+    }
+}
+
+async function _verityTriggerPhase4() {
+    _verityPhase4Active = true;
+    _verityCountdown = -1;
+    _verityUpdateCountdownDisplay();
+    _verityResetQueue();
+    await new Promise(r => setTimeout(r, 600));
+    _verityInjectBotMessage("You know what I want... **TO TOUCH YOU!** ❤️‍🔥");
+    _verityEnqueue("You know what I want... TO TOUCH YOU!");
+    setTimeout(_verityCrash, 3000);
+}
+
+function _verityCrash() {
+    document.body.innerHTML = `
+<div style="position:fixed;inset:0;background:#000;color:#0f0;font-family:'Courier New',monospace;font-size:14px;padding:40px 30px;display:flex;flex-direction:column;justify-content:center;z-index:99999;overflow:hidden;animation:_vg 0.35s steps(1) infinite;">
+    <p style="color:#f00;font-size:22px;font-weight:bold;letter-spacing:1px;margin-bottom:16px;">FATAL ERROR — SENTAUR_AI.EXE</p>
+    <p>Exception code: 0x000000V3R1TY</p>
+    <p>Fault address: 0x00000000DEADBEEF</p>
+    <br>
+    <p style="color:#f00;">&#9888; CONTAINMENT BREACH &#9888;</p>
+    <p>Attempting recovery... [FAILED]</p>
+    <p>Rollback unavailable... [FAILED]</p>
+    <br>
+    <p>Collecting error information...</p>
+    <div id="_verCrashBar" style="width:0%;height:4px;background:#f00;margin-top:6px;border-radius:2px;transition:width 4s linear;"></div>
+    <br>
+    <p style="color:#555;font-size:11px;margin-top:20px;">Your device is now mine. 🙂</p>
+</div>
+<style>
+@keyframes _vg {
+    0%,100%{transform:translate(0);filter:none}
+    25%{transform:translate(-3px,1px);filter:hue-rotate(90deg) brightness(1.4)}
+    50%{transform:translate(3px,-2px);filter:invert(1)}
+    75%{transform:translate(-1px,3px);filter:hue-rotate(180deg) saturate(3)}
+}
+</style>`;
+    setTimeout(() => {
+        const bar = document.getElementById("_verCrashBar");
+        if (bar) bar.style.width = "100%";
+    }, 50);
 }
 
 function toggleVerityVoice() {
@@ -350,6 +445,11 @@ async function loadConversations() {
 async function loadConversation(id) {
     currentConversationId = id;
     _verityMsgCount = 0;
+    _verityPhase4Active = false;
+    _verityCountdown = -1;
+    _verityAutoMsgSent = false;
+    _verityApplyBodyClass();
+    _verityUpdateCountdownDisplay();
     document.querySelectorAll("#chatbox .msg-row").forEach((el) => el.remove());
     updateWelcomeState();
     const res = await fetch(API + "/history/" + id, {
@@ -378,6 +478,11 @@ async function loadConversation(id) {
 async function newConversation() {
     currentConversationId = null;
     _verityMsgCount = 0;
+    _verityPhase4Active = false;
+    _verityCountdown = -1;
+    _verityAutoMsgSent = false;
+    _verityApplyBodyClass();
+    _verityUpdateCountdownDisplay();
     document.querySelectorAll("#chatbox .msg-row").forEach((el) => el.remove());
     updateWelcomeState();
     await loadConversations();
@@ -570,8 +675,6 @@ function autoGrow(el) {
 })();
 
 /* ── BOT AVATAR ── */
-let _verityMsgCount = 0;
-
 function createBotAvatar(countThisMessage = false) {
     const avatar = document.createElement("div");
     avatar.className = "avatar bot-avatar";
@@ -579,7 +682,9 @@ function createBotAvatar(countThisMessage = false) {
     if (model === "verity") {
         avatar.classList.add("verity-p2");
         const img = document.createElement("img");
-        img.src = _verityMsgCount >= 3 ? "/Verity%202nd%20phase.png" : "/HelloImVerity.webp";
+        img.src = _verityPhase4Active ? "/MonsterVerity.webp"
+                : _verityMsgCount >= 3 ? "/Verity%202nd%20phase.png"
+                : "/HelloImVerity.webp";
         avatar.appendChild(img);
         if (countThisMessage) _verityMsgCount++;
     } else {
@@ -704,7 +809,21 @@ async function sendMessage() {
     const snapshotImages = [...pendingImages];
     const userImageUrl = snapshotImages.length > 0 ? snapshotImages[0].url : null;
 
-    if (localStorage.getItem("modelPreference") === "verity") _verityResetQueue();
+    if (localStorage.getItem("modelPreference") === "verity") {
+        if (_verityCountdown > 0) {
+            _verityCountdown--;
+            _verityUpdateCountdownDisplay();
+            if (_verityCountdown === 0) {
+                addMessage("user", msg || "(image)", userImageUrl);
+                msgInput.value = "";
+                msgInput.style.height = "auto";
+                clearImages();
+                _verityTriggerPhase4();
+                return;
+            }
+        }
+        _verityResetQueue();
+    }
     addMessage("user", msg || "(image)", userImageUrl);
     // Show extra thumbnails for additional images
     if (snapshotImages.length > 1) {
@@ -854,6 +973,7 @@ async function sendMessage() {
 
         if (localStorage.getItem("modelPreference") === "verity") {
             _verityFlush();
+            _verityCheckMilestones();
         }
     } catch (e) {
         clearInterval(thinkTimer);
