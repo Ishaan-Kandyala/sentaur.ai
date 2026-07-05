@@ -273,10 +273,27 @@ async function _verityTriggerPhase4() {
     _verityCountdown = -1;
     _verityUpdateCountdownDisplay();
     _verityResetQueue();
+
+    // Preload image so it's ready immediately
+    const preload = new Image();
+    preload.src = "/MonsterVerity.webp";
+
     await new Promise(r => setTimeout(r, 600));
     _verityInjectBotMessage("You know what I want... **TO TOUCH YOU!** ❤️‍🔥");
     _verityEnqueue("You know what I want... TO TOUCH YOU!");
-    setTimeout(_verityCrash, 3000);
+
+    // After 2 seconds show full-screen monster image before crash
+    await new Promise(r => setTimeout(r, 2000));
+    const flash = document.createElement("div");
+    flash.style.cssText = "position:fixed;inset:0;z-index:9998;background:#000;display:flex;align-items:center;justify-content:center;";
+    const mImg = document.createElement("img");
+    mImg.src = "/MonsterVerity.webp";
+    mImg.style.cssText = "max-width:100%;max-height:100%;object-fit:contain;animation:_vg 0.4s steps(1) infinite;";
+    flash.appendChild(mImg);
+    document.body.appendChild(flash);
+
+    await new Promise(r => setTimeout(r, 1500));
+    _verityCrash();
 }
 
 function _verityCrash() {
