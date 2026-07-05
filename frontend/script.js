@@ -239,6 +239,7 @@ async function loadConversations() {
 
 async function loadConversation(id) {
     currentConversationId = id;
+    _verityMsgCount = 0;
     document.querySelectorAll("#chatbox .msg-row").forEach((el) => el.remove());
     updateWelcomeState();
     const res = await fetch(API + "/history/" + id, {
@@ -266,6 +267,7 @@ async function loadConversation(id) {
 
 async function newConversation() {
     currentConversationId = null;
+    _verityMsgCount = 0;
     document.querySelectorAll("#chatbox .msg-row").forEach((el) => el.remove());
     updateWelcomeState();
     await loadConversations();
@@ -458,11 +460,25 @@ function autoGrow(el) {
 })();
 
 /* ── BOT AVATAR ── */
+let _verityMsgCount = 0;
+
 function createBotAvatar() {
     const avatar = document.createElement("div");
     avatar.className = "avatar bot-avatar";
     const model = localStorage.getItem("modelPreference") || "auto";
-    avatar.textContent = model === "verity" ? "🙂" : "S";
+    if (model === "verity") {
+        if (_verityMsgCount >= 3) {
+            avatar.classList.add("verity-p2");
+            const img = document.createElement("img");
+            img.src = "/Verity%202nd%20phase.png";
+            avatar.appendChild(img);
+        } else {
+            avatar.textContent = "🙂";
+        }
+        _verityMsgCount++;
+    } else {
+        avatar.textContent = "S";
+    }
     return avatar;
 }
 
