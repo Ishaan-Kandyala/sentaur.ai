@@ -127,14 +127,18 @@ function updatePlaceholder(model) {
     if (vBtn) vBtn.style.display = model === "verity" ? "inline-flex" : "none";
 }
 
-/* ── VERITY VOICE (Web Speech API) ── */
+/* ── VERITY VOICE ── */
 let _verityVoiceMuted = false;
-let _cachedVoices = [];
+let _cachedVoices     = [];
+let _verityQueue      = [];
+let _verityQueueBusy  = false;
+let _veritySentBuf    = "";
+let _veritySpokenPos  = 0;
 
 if (window.speechSynthesis) {
-    const _loadVoices = () => { _cachedVoices = window.speechSynthesis.getVoices(); };
-    _loadVoices();
-    window.speechSynthesis.onvoiceschanged = _loadVoices;
+    const _lv = () => { _cachedVoices = window.speechSynthesis.getVoices(); };
+    _lv();
+    window.speechSynthesis.onvoiceschanged = _lv;
 }
 
 function _stripForSpeech(text) {
@@ -152,41 +156,62 @@ function _stripForSpeech(text) {
         .trim();
 }
 
-function _veritySpeakWebSpeech(clean) {
-    if (!window.speechSynthesis) return;
-    const utt = new SpeechSynthesisUtterance(clean);
-    if (_verityMsgCount <= 3) { utt.pitch = 1.25; utt.rate = 1.05; }
-    else                      { utt.pitch = 0.55; utt.rate = 0.78; }
-    const picked = _cachedVoices.find(v => /samantha|karen|victoria|zira|google uk english female/i.test(v.name));
-    if (picked) utt.voice = picked;
-    window.speechSynthesis.speak(utt);
+function _verityResetQueue() {
+    _verityQueue     = [];
+    _verityQueueBusy = false;
+    _veritySentBuf   = "";
+    _veritySpokenPos = 0;
+    if (window._verityAudio) { window._verityAudio.pause(); window._verityAudio = null; }
+    window.speechSynthesis?.cancel();
 }
 
-async function _veritySpeak(text) {
-    if (_verityVoiceMuted) return;
-    window.speechSynthesis?.cancel();
-    if (window._verityAudio) { window._verityAudio.pause(); window._verityAudio = null; }
-
-    const clean = _stripForSpeech(text);
-    if (!clean) return;
-
+async function _verityPlayNext() {
+    if (_verityVoiceMuted || _verityQueue.length === 0) { _verityQueueBusy = false; return; }
+    _verityQueueBusy = true;
+    const text  = _verityQueue.shift();
     const phase = _verityMsgCount <= 3 ? 1 : 2;
-
     try {
         const res = await fetch("/verity/speak", {
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": "Bearer " + getToken() },
-            body: JSON.stringify({ text: clean, phase }),
+            body: JSON.stringify({ text, phase }),
         });
-        if (!res.ok) throw new Error("no_key");
+        if (!res.ok) throw new Error();
         const blob = await res.blob();
         const url  = URL.createObjectURL(blob);
         window._verityAudio = new Audio(url);
-        window._verityAudio.onended = () => URL.revokeObjectURL(url);
+        window._verityAudio.onended = () => { URL.revokeObjectURL(url); _verityPlayNext(); };
         window._verityAudio.play();
     } catch (_) {
-        _veritySpeakWebSpeech(clean);
+        const utt = new SpeechSynthesisUtterance(text);
+        utt.pitch = phase === 1 ? 1.25 : 0.55;
+        utt.rate  = phase === 1 ? 1.05 : 0.78;
+        const v = _cachedVoices.find(v => /samantha|karen|victoria|zira|google uk english female/i.test(v.name));
+        if (v) utt.voice = v;
+        utt.onend = () => _verityPlayNext();
+        window.speechSynthesis?.speak(utt);
     }
+}
+
+function _verityEnqueue(text) {
+    const clean = _stripForSpeech(text);
+    if (!clean) return;
+    _verityQueue.push(clean);
+    if (!_verityQueueBusy) _verityPlayNext();
+}
+
+// Called with the growing responseText during streaming
+function _verityFeedText(responseText) {
+    const newPart = responseText.slice(_veritySpokenPos);
+    _veritySpokenPos = responseText.length;
+    _veritySentBuf += newPart;
+    const parts = _veritySentBuf.split(/(?<=[.!?])\s+/);
+    for (let i = 0; i < parts.length - 1; i++) _verityEnqueue(parts[i]);
+    _veritySentBuf = parts[parts.length - 1];
+}
+
+function _verityFlush() {
+    if (_veritySentBuf.trim()) { _verityEnqueue(_veritySentBuf); _veritySentBuf = ""; }
 }
 
 function toggleVerityVoice() {
@@ -194,6 +219,7 @@ function toggleVerityVoice() {
     if (_verityVoiceMuted) {
         window.speechSynthesis?.cancel();
         if (window._verityAudio) { window._verityAudio.pause(); window._verityAudio = null; }
+        _verityQueue = [];
     }
     const btn = document.getElementById("verityVoiceBtn");
     if (btn) {
@@ -678,6 +704,7 @@ async function sendMessage() {
     const snapshotImages = [...pendingImages];
     const userImageUrl = snapshotImages.length > 0 ? snapshotImages[0].url : null;
 
+    if (localStorage.getItem("modelPreference") === "verity") _verityResetQueue();
     addMessage("user", msg || "(image)", userImageUrl);
     // Show extra thumbnails for additional images
     if (snapshotImages.length > 1) {
@@ -783,6 +810,9 @@ async function sendMessage() {
                                 }
                             }
                             textEl.innerHTML = marked.parse(responseText);
+                            if (localStorage.getItem("modelPreference") === "verity") {
+                                _verityFeedText(responseText);
+                            }
                         }
                         document.getElementById("chatbox").scrollTop =
                             document.getElementById("chatbox").scrollHeight;
@@ -823,7 +853,7 @@ async function sendMessage() {
         };
 
         if (localStorage.getItem("modelPreference") === "verity") {
-            _veritySpeak(fullText);
+            _verityFlush();
         }
     } catch (e) {
         clearInterval(thinkTimer);
