@@ -10,7 +10,6 @@ class CerebrasProvider:
         else:
             self.client = OpenAI(api_key=api_key, base_url="https://api.cerebras.ai/v1")
         self.models = [
-            "glm-4-7",
             "gemma-4-31b",
             "llama3.3-70b",
             "llama3.1-8b",
