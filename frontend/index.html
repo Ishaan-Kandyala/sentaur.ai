@@ -149,14 +149,24 @@
 <div class="bg">
     <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
         <defs>
-            <pattern id="hex-tile" x="0" y="0" width="148" height="128" patternUnits="userSpaceOnUse">
-                <!-- two offset rows of hexagons -->
-                <polygon points="74,4 144,42 144,86 74,124 4,86 4,42"
-                    fill="#181820" stroke="#111118" stroke-width="0.8"/>
-                <polygon points="-2,68 68,106 68,150 -2,188 -72,150 -72,106"
-                    fill="#181820" stroke="#111118" stroke-width="0.8"/>
-                <polygon points="150,68 220,106 220,150 150,188 80,150 80,106"
-                    fill="#181820" stroke="#111118" stroke-width="0.8"/>
+            <!--
+                Regular pointy-top hex: circumradius r=75
+                Width  = r*sqrt(3) = 130
+                Height = 2r = 150
+                Tile:  width=130, height=225 (= 1.5 * height, for two offset rows)
+                Row 1 center: (65, 75)
+                Row 2 centers: (0, 187.5) and (130, 187.5) — split by tile edges, SVG pattern tiles them correctly
+            -->
+            <pattern id="hex-tile" x="0" y="0" width="130" height="225" patternUnits="userSpaceOnUse">
+                <!-- Row 1: center (65, 75) -->
+                <polygon points="65,0 130,37.5 130,112.5 65,150 0,112.5 0,37.5"
+                    fill="#1a1a1e" stroke="#111116" stroke-width="0.7"/>
+                <!-- Row 2: center (0, 187.5) — right half visible in tile -->
+                <polygon points="0,112.5 65,150 65,225 0,262.5 -65,225 -65,150"
+                    fill="#1a1a1e" stroke="#111116" stroke-width="0.7"/>
+                <!-- Row 2: center (130, 187.5) — left half visible in tile -->
+                <polygon points="130,112.5 195,150 195,225 130,262.5 65,225 65,150"
+                    fill="#1a1a1e" stroke="#111116" stroke-width="0.7"/>
             </pattern>
             <radialGradient id="fade" cx="55%" cy="50%" r="65%" gradientUnits="objectBoundingBox">
                 <stop offset="0%"   stop-color="#fff" stop-opacity="0.14"/>
