@@ -753,7 +753,7 @@ function createBotAvatar(countThisMessage = false) {
         const img = document.createElement("img");
         img.src = _verityPhase4Active ? "/MonsterVerity.webp"
                 : _verityMsgCount >= 3 ? "/Verity%202nd%20phase.png"
-                : "/HelloImVerity.webp";
+                : "/HelloImNotVerity.webp";
         avatar.appendChild(img);
         if (countThisMessage) _verityMsgCount++;
     } else {
