@@ -335,7 +335,7 @@ def maybe_handle_tools(db: Session, user: User, message: str, messages: list = N
     return None
 
 
-_FAST_PROVIDERS = [_groq, _cerebras]
+_FAST_PROVIDERS = [_groq]
 
 def get_providers(model_preference: str = None, message: str = ""):
     if model_preference and model_preference in PROVIDER_MAP:
