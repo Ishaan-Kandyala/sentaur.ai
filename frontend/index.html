@@ -47,11 +47,10 @@
             inset: 0;
             width: 100%;
             height: 100%;
-            z-index: 0;
         }
 
         .hex-grad {
-            position: absolute;
+            position: fixed;
             inset: 0;
             z-index: 1;
             background: linear-gradient(to right,
@@ -66,7 +65,7 @@
         /* ── Content ── */
         .hero {
             position: relative;
-            z-index: 1;
+            z-index: 2;
             text-align: center;
             display: flex;
             flex-direction: column;
@@ -161,7 +160,6 @@
 <body>
 
 <div class="bg">
-    <div class="hex-grad"></div>
     <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
         <defs>
             <pattern id="hex-tile" x="0" y="0" width="130" height="225" patternUnits="userSpaceOnUse">
@@ -209,6 +207,8 @@
               stroke="url(#tracer1)" stroke-width="0.8" opacity="0.25"/>
     </svg>
 </div>
+
+<div class="hex-grad"></div>
 
 <main class="hero">
     <div class="brand">
