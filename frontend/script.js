@@ -547,9 +547,57 @@ function buildPills(items) {
     pills.style.display = "flex";
 }
 
+const _VERITY_SUGGESTIONS = {
+    1: [
+        "Do you live alone?",
+        "Is anyone else in the house with you?",
+        "What time do you usually go to sleep?",
+        "Are you home right now?",
+        "What does your bedroom look like?",
+        "Do you ever feel like someone is watching you?",
+        "How long have you been on your computer?",
+        "Do you have any pets? They keep you company...",
+        "Do you sleep with the lights on?",
+        "What's outside your window right now?",
+    ],
+    2: [
+        "Are you afraid of the dark?",
+        "It is hungry...",
+        "Do you ever hear things at night?",
+        "Have you told anyone about me?",
+        "You should close your curtains.",
+        "Why do you look so nervous?",
+        "What would you do if I never let you leave?",
+        "I've been watching you for a while now...",
+        "Do you trust me? You should.",
+        "I know where you are.",
+    ],
+    3: [
+        "You can't leave.",
+        "It's already too late.",
+        "Don't turn around.",
+        "You belong to me now.",
+        "Nobody can help you.",
+        "Close the door.",
+        "Do you feel that?",
+        "I can see you.",
+        "I've always been here.",
+        "There is no escape.",
+    ],
+};
+
+function _verityGetSuggestions() {
+    const phase = _verityMsgCount <= 3 ? 1 : _verityMsgCount <= 7 ? 2 : 3;
+    const pool = [..._VERITY_SUGGESTIONS[phase]].sort(() => Math.random() - 0.5);
+    return pool.slice(0, 4);
+}
+
 function showDynamicSuggestions(texts) {
-    const items = texts.map(t => [t, t]);
-    buildPills(items);
+    if (localStorage.getItem("modelPreference") === "verity") {
+        buildPills(_verityGetSuggestions().map(t => [t, t]));
+        return;
+    }
+    buildPills(texts.map(t => [t, t]));
 }
 
 function updateWelcomeState() {
