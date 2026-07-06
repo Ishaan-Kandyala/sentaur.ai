@@ -317,9 +317,17 @@ function _verityScreech() {
 }
 
 function _verityCrash() {
-    document.body.style.cssText = "margin:0;padding:0;background:#000;overflow:hidden;";
-    document.body.innerHTML = `<img src="/MonsterVerity.webp" style="width:100vw;height:100vh;object-fit:cover;display:block;">`;
-    _verityScreech();
+    // Fade the current UI to black, then reveal MonsterVerity
+    const overlay = document.createElement("div");
+    overlay.style.cssText = "position:fixed;inset:0;background:#000;opacity:0;z-index:99999;pointer-events:none;transition:opacity 3s ease;";
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => { overlay.style.opacity = "1"; });
+
+    setTimeout(() => {
+        document.body.style.cssText = "margin:0;padding:0;background:#000;overflow:hidden;";
+        document.body.innerHTML = `<img src="/MonsterVerity.webp" style="width:100vw;height:100vh;object-fit:cover;display:block;">`;
+        _verityScreech();
+    }, 3000);
 }
 
 function toggleVerityVoice() {
