@@ -9,7 +9,7 @@ import jwt
 from sqlalchemy.orm import Session
 from authlib.integrations.starlette_client import OAuth
 from .database import get_db
-from .models import User
+from .models import User, Conversation, ConversationTurn
 from .tools import send_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -82,6 +82,13 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
+def _clear_conversations(db: Session, user_id: int):
+    conv_ids = [c.id for c in db.query(Conversation.id).filter(Conversation.user_id == user_id).all()]
+    if conv_ids:
+        db.query(ConversationTurn).filter(ConversationTurn.conversation_id.in_(conv_ids)).delete(synchronize_session=False)
+        db.query(Conversation).filter(Conversation.user_id == user_id).delete(synchronize_session=False)
+        db.commit()
+
 def get_or_create_oauth_user(db: Session, email: str, name: str = None, avatar_url: str = None) -> str:
     user = db.query(User).filter(User.email == email).first()
     if not user:
@@ -95,6 +102,7 @@ def get_or_create_oauth_user(db: Session, email: str, name: str = None, avatar_u
         if avatar_url:
             user.avatar_url = avatar_url
         db.commit()
+        _clear_conversations(db, user.id)
     return create_access_token({"sub": str(user.id)})
 
 @router.post("/signup", response_model=TokenResponse)
@@ -114,6 +122,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Invalid credentials")
+    _clear_conversations(db, user.id)
     token = create_access_token({"sub": str(user.id)})
     return TokenResponse(access_token=token)
 
