@@ -1,67 +1,232 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Sentaur AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sentrinox AI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        .landing {
-            height: 100vh;
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #0b0b0d;
+        }
+
+        /* ── Hex background ── */
+        .bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bg::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 90% 90% at 105% 105%, rgba(241,70,33,.09) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 60% at 0% 0%,  rgba(0,0,0,.6) 0%, transparent 70%);
+        }
+
+        .bg svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ── Content ── */
+        .hero {
+            position: relative;
+            z-index: 1;
+            text-align: center;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            text-align: center;
-            background: var(--bg);
-            color: var(--text);
+            gap: 22px;
         }
 
-        .landing h1 {
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
-
-        .landing p {
-            font-size: 20px;
-            opacity: 0.8;
-            margin-bottom: 30px;
-        }
-
-        .landing-buttons {
+        .brand {
             display: flex;
-            gap: 20px;
+            align-items: center;
+            gap: 18px;
         }
 
-        .landing-buttons a {
-            padding: 14px 28px;
-            background: #4a6cf7;
-            color: white;
-            border-radius: 10px;
-            text-decoration: none;
+        .brand-icon {
+            width: 58px;
+            height: 58px;
+            flex-shrink: 0;
+        }
+
+        .brand-name {
+            font-size: 44px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            line-height: 1;
+        }
+
+        .divider {
+            width: 38px;
+            height: 2px;
+            background: #f14621;
+            border-radius: 2px;
+        }
+
+        .tagline {
             font-size: 18px;
+            color: #999;
+            font-weight: 400;
         }
 
-        .landing-buttons a:hover {
-            opacity: 0.9;
+        .tagline strong {
+            color: #f14621;
+            font-weight: 600;
+        }
+
+        .access-form {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .access-form input[type="email"] {
+            width: 296px;
+            padding: 13px 16px;
+            background: #13131a;
+            border: 1px solid #252530;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .access-form input[type="email"]::placeholder { color: #444; }
+        .access-form input[type="email"]:focus { border-color: rgba(241,70,33,.6); }
+
+        .access-form button {
+            padding: 13px 22px;
+            background: #f14621;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background .18s, transform .12s;
+        }
+
+        .access-form button:hover  { background: #d9400f; }
+        .access-form button:active { transform: scale(.97); }
+
+        @media (max-width: 520px) {
+            .access-form { flex-direction: column; width: calc(100vw - 48px); }
+            .access-form input[type="email"] { width: 100%; }
+            .brand-name { font-size: 32px; }
+            .brand-icon { width: 44px; height: 44px; }
         }
     </style>
 </head>
 <body>
 
-<div class="landing">
-    <img src="logo.jpg" alt="Sentaur AI" style="width:220px;border-radius:18px;margin-bottom:24px;">
-    <h1>Welcome to Sentaur AI</h1>
-    <p>Your personal intelligent assistant -- fast, modern, and always ready to help.</p>
-
-    <div class="landing-buttons">
-        <a href="login.html">Login</a>
-        <a href="signup.html">Sign Up</a>
-    </div>
+<div class="bg">
+    <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+        <defs>
+            <pattern id="hex-tile" x="0" y="0" width="148" height="128" patternUnits="userSpaceOnUse">
+                <!-- two offset rows of hexagons -->
+                <polygon points="74,4 144,42 144,86 74,124 4,86 4,42"
+                    fill="#181820" stroke="#111118" stroke-width="0.8"/>
+                <polygon points="-2,68 68,106 68,150 -2,188 -72,150 -72,106"
+                    fill="#181820" stroke="#111118" stroke-width="0.8"/>
+                <polygon points="150,68 220,106 220,150 150,188 80,150 80,106"
+                    fill="#181820" stroke="#111118" stroke-width="0.8"/>
+            </pattern>
+            <radialGradient id="fade" cx="55%" cy="50%" r="65%" gradientUnits="objectBoundingBox">
+                <stop offset="0%"   stop-color="#fff" stop-opacity="0.14"/>
+                <stop offset="55%"  stop-color="#fff" stop-opacity="0.05"/>
+                <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+            </radialGradient>
+            <!-- orange edge tracers -->
+            <linearGradient id="tracer1" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%"   stop-color="#f14621" stop-opacity="0"/>
+                <stop offset="50%"  stop-color="#f14621" stop-opacity="0.7"/>
+                <stop offset="100%" stop-color="#f14621" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="tracer2" x1="1" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stop-color="#f14621" stop-opacity="0"/>
+                <stop offset="50%"  stop-color="#f14621" stop-opacity="0.5"/>
+                <stop offset="100%" stop-color="#f14621" stop-opacity="0"/>
+            </linearGradient>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#hex-tile)"/>
+        <rect width="100%" height="100%" fill="url(#fade)" opacity="0.35"/>
+        <!-- subtle orange edge lines in bottom-right -->
+        <line x1="78%" y1="100%" x2="100%" y2="62%"
+              stroke="url(#tracer1)" stroke-width="1" opacity="0.5"/>
+        <line x1="92%" y1="100%" x2="100%" y2="80%"
+              stroke="url(#tracer2)" stroke-width="1" opacity="0.35"/>
+        <line x1="100%" y1="45%" x2="85%"  y2="100%"
+              stroke="url(#tracer1)" stroke-width="0.8" opacity="0.25"/>
+    </svg>
 </div>
 
-<script src="script.js"></script>
+<main class="hero">
+    <div class="brand">
+        <!-- Orange hexagonal logo -->
+        <svg class="brand-icon" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="30,3 55,17 55,43 30,57 5,43 5,17"
+                fill="#f14621" fill-opacity=".12" stroke="#f14621" stroke-width="1.2"/>
+            <polygon points="30,11 47,21 47,41 30,51 13,41 13,21"
+                fill="#f14621" fill-opacity=".08" stroke="#f14621" stroke-opacity=".5" stroke-width="0.8"/>
+            <!-- internal circuit lines -->
+            <line x1="30" y1="3"  x2="30" y2="20" stroke="#f14621" stroke-width="1.2" stroke-opacity=".7"/>
+            <line x1="55" y1="17" x2="40" y2="26" stroke="#f14621" stroke-width="1.2" stroke-opacity=".7"/>
+            <line x1="55" y1="43" x2="40" y2="34" stroke="#f14621" stroke-width="1.2" stroke-opacity=".7"/>
+            <line x1="30" y1="57" x2="30" y2="40" stroke="#f14621" stroke-width="1.2" stroke-opacity=".7"/>
+            <line x1="5"  y1="43" x2="20" y2="34" stroke="#f14621" stroke-width="1.2" stroke-opacity=".7"/>
+            <line x1="5"  y1="17" x2="20" y2="26" stroke="#f14621" stroke-width="1.2" stroke-opacity=".7"/>
+            <!-- inner hexagon filled -->
+            <polygon points="30,20 40,26 40,38 30,44 20,38 20,26" fill="#f14621" fill-opacity=".25"/>
+            <!-- center dot -->
+            <circle cx="30" cy="30" r="5" fill="#f14621" fill-opacity=".9"/>
+            <circle cx="30" cy="30" r="2.5" fill="#fff" fill-opacity=".85"/>
+        </svg>
+        <span class="brand-name">Sentrinox AI</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <p class="tagline">Chaos to <strong>Controlled Autonomy</strong></p>
+
+    <form class="access-form" onsubmit="handleAccess(event)">
+        <input type="email" placeholder="you@yourcompany.com" required>
+        <button type="submit">Get Early Access</button>
+    </form>
+</main>
+
+<script>
+    function handleAccess(e) {
+        e.preventDefault();
+        window.location.href = '/signup.html';
+    }
+</script>
+
 </body>
 </html>
