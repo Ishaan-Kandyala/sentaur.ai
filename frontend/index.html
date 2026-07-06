@@ -149,29 +149,27 @@
 <div class="bg">
     <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
         <defs>
-            <!--
-                Regular pointy-top hex: circumradius r=75
-                Width  = r*sqrt(3) = 130
-                Height = 2r = 150
-                Tile:  width=130, height=225 (= 1.5 * height, for two offset rows)
-                Row 1 center: (65, 75)
-                Row 2 centers: (0, 187.5) and (130, 187.5) — split by tile edges, SVG pattern tiles them correctly
-            -->
+            <!-- Hex fill: dark left → light right -->
+            <linearGradient id="hex-grad" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+                <stop offset="0%"   stop-color="#111114"/>
+                <stop offset="100%" stop-color="#2a2a30"/>
+            </linearGradient>
+
             <pattern id="hex-tile" x="0" y="0" width="130" height="225" patternUnits="userSpaceOnUse">
                 <!-- Row 1: center (65, 75) -->
                 <polygon points="65,0 130,37.5 130,112.5 65,150 0,112.5 0,37.5"
-                    fill="#1a1a1e" stroke="#111116" stroke-width="0.7"/>
+                    fill="url(#hex-grad)" stroke="#0d0d10" stroke-width="0.7"/>
                 <!-- Row 2: center (0, 187.5) -->
                 <polygon points="0,112.5 65,150 65,225 0,262.5 -65,225 -65,150"
-                    fill="#1a1a1e" stroke="#111116" stroke-width="0.7"/>
+                    fill="url(#hex-grad)" stroke="#0d0d10" stroke-width="0.7"/>
                 <!-- Row 2: center (130, 187.5) -->
                 <polygon points="130,112.5 195,150 195,225 130,262.5 65,225 65,150"
-                    fill="#1a1a1e" stroke="#111116" stroke-width="0.7"/>
+                    fill="url(#hex-grad)" stroke="#0d0d10" stroke-width="0.7"/>
                 <!-- Wrap: bottom of row-2 hexes that tile back to top of pattern -->
                 <polygon points="0,-112.5 65,-75 65,0 0,37.5 -65,0 -65,-75"
-                    fill="#1a1a1e" stroke="#111116" stroke-width="0.7"/>
+                    fill="url(#hex-grad)" stroke="#0d0d10" stroke-width="0.7"/>
                 <polygon points="130,-112.5 195,-75 195,0 130,37.5 65,0 65,-75"
-                    fill="#1a1a1e" stroke="#111116" stroke-width="0.7"/>
+                    fill="url(#hex-grad)" stroke="#0d0d10" stroke-width="0.7"/>
             </pattern>
             <radialGradient id="fade" cx="55%" cy="50%" r="65%" gradientUnits="objectBoundingBox">
                 <stop offset="0%"   stop-color="#fff" stop-opacity="0.14"/>
