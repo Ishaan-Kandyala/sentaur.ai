@@ -258,16 +258,7 @@ function _verityInjectBotMessage(text) {
 }
 
 function _verityCheckMilestones() {
-    _verityApplyBodyClass();
-    if (_verityMsgCount >= 12 && !_verityAutoMsgSent) {
-        _verityAutoMsgSent = true;
-        _verityCountdown = 3;
-        setTimeout(() => {
-            _verityInjectBotMessage("Something is coming in 3 messages... 🙂");
-            _verityUpdateCountdownDisplay();
-            _verityEnqueue("Something is coming in 3 messages.");
-        }, 1500);
-    }
+    // Phase visuals are handled by CSS only; nothing count-based needed here
 }
 
 async function _verityTriggerPhase4() {
@@ -288,17 +279,47 @@ async function _verityTriggerPhase4() {
     _verityCrash();
 }
 
+function _verityScreech() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // White noise filtered to high-frequency screech
+        const bufLen = ctx.sampleRate * 12;
+        const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufLen; i++) data[i] = Math.random() * 2 - 1;
+        const noise = ctx.createBufferSource();
+        noise.buffer = buf;
+        noise.loop = true;
+        const hp = ctx.createBiquadFilter();
+        hp.type = "highpass";
+        hp.frequency.value = 3500;
+        hp.Q.value = 15;
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.value = 2.5;
+        noise.connect(hp); hp.connect(noiseGain); noiseGain.connect(ctx.destination);
+        noise.start();
+
+        // Tonal screech oscillator that ramps up and jitters
+        const osc = ctx.createOscillator();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(300, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(2800, ctx.currentTime + 0.2);
+        osc.frequency.linearRampToValueAtTime(900,  ctx.currentTime + 0.5);
+        osc.frequency.linearRampToValueAtTime(3200, ctx.currentTime + 0.8);
+        osc.frequency.linearRampToValueAtTime(600,  ctx.currentTime + 1.1);
+        osc.frequency.linearRampToValueAtTime(4000, ctx.currentTime + 1.4);
+        const oscGain = ctx.createGain();
+        oscGain.gain.value = 1.8;
+        osc.connect(oscGain); oscGain.connect(ctx.destination);
+        osc.start();
+    } catch (_) {}
+}
+
 function _verityCrash() {
-    // Replace entire page with full-screen MonsterVerity
     document.body.style.cssText = "margin:0;padding:0;background:#000;overflow:hidden;";
     document.body.innerHTML = `<img src="/MonsterVerity.webp" style="width:100vw;height:100vh;object-fit:cover;display:block;">`;
-
-    // Two rAF calls let the browser paint the image before the freeze
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-        // Genuine tab freeze — browser will show its own "not responding" UI
-        const end = Date.now() + 9_999_999_999;
-        while (Date.now() < end) { /* intentional freeze */ }
-    }));
+    _verityScreech();
 }
 
 function toggleVerityVoice() {
@@ -802,6 +823,32 @@ async function sendMessage() {
     const userImageUrl = snapshotImages.length > 0 ? snapshotImages[0].url : null;
 
     if (localStorage.getItem("modelPreference") === "verity") {
+        // Goodbye detection → start Phase 4 countdown
+        if (!_verityAutoMsgSent && !_verityPhase4Active && msg) {
+            const lower = msg.toLowerCase();
+            const goodbyeWords = [
+                "bye", "goodbye", "good bye", "see you", "see ya", "gotta go",
+                "got to go", "have to go", "need to go", "leaving", "i'm out",
+                "im out", "later", "farewell", "cya", "ciao", "adios",
+                "au revoir", "take care", "gotta leave", "brb", "heading out",
+            ];
+            if (goodbyeWords.some(w => lower.includes(w))) {
+                _verityAutoMsgSent = true;
+                _verityCountdown = 3;
+                addMessage("user", msg, userImageUrl);
+                msgInput.value = "";
+                msgInput.style.height = "auto";
+                clearImages();
+                _verityResetQueue();
+                setTimeout(() => {
+                    _verityInjectBotMessage("Something is coming in 3 messages... 🙂");
+                    _verityUpdateCountdownDisplay();
+                    _verityEnqueue("Something is coming in 3 messages.");
+                }, 600);
+                return;
+            }
+        }
+
         if (_verityCountdown > 0) {
             _verityCountdown--;
             _verityUpdateCountdownDisplay();

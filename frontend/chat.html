@@ -73,23 +73,6 @@
             object-fit: cover; border-radius: 50%; display: block;
         }
 
-        /* Verity Phase 3 effects */
-        @keyframes verity-pulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(200,0,0,0); }
-            50%       { box-shadow: 0 0 10px 4px rgba(200,0,0,0.45); }
-        }
-        body.verity-p3 .bot-avatar.verity-p2 {
-            animation: verity-pulse 2.2s ease-in-out infinite;
-        }
-        body.verity-p3 .bot-avatar.verity-p2 img {
-            filter: hue-rotate(300deg) saturate(2) brightness(0.85);
-        }
-        body.verity-p3 #chatbox {
-            background: linear-gradient(to bottom, var(--bg, #f0f4f8), rgba(140,0,0,0.05));
-        }
-        body.verity-p3 .dark #chatbox, .dark body.verity-p3 #chatbox {
-            background: linear-gradient(to bottom, var(--bg, #111827), rgba(200,0,0,0.08));
-        }
 
         /* ── Floating Panels ── */
         .float-panel {
