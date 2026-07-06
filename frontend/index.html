@@ -161,11 +161,16 @@
                 <!-- Row 1: center (65, 75) -->
                 <polygon points="65,0 130,37.5 130,112.5 65,150 0,112.5 0,37.5"
                     fill="#1a1a1e" stroke="#111116" stroke-width="0.7"/>
-                <!-- Row 2: center (0, 187.5) — right half visible in tile -->
+                <!-- Row 2: center (0, 187.5) -->
                 <polygon points="0,112.5 65,150 65,225 0,262.5 -65,225 -65,150"
                     fill="#1a1a1e" stroke="#111116" stroke-width="0.7"/>
-                <!-- Row 2: center (130, 187.5) — left half visible in tile -->
+                <!-- Row 2: center (130, 187.5) -->
                 <polygon points="130,112.5 195,150 195,225 130,262.5 65,225 65,150"
+                    fill="#1a1a1e" stroke="#111116" stroke-width="0.7"/>
+                <!-- Wrap: bottom of row-2 hexes that tile back to top of pattern -->
+                <polygon points="0,-112.5 65,-75 65,0 0,37.5 -65,0 -65,-75"
+                    fill="#1a1a1e" stroke="#111116" stroke-width="0.7"/>
+                <polygon points="130,-112.5 195,-75 195,0 130,37.5 65,0 65,-75"
                     fill="#1a1a1e" stroke="#111116" stroke-width="0.7"/>
             </pattern>
             <radialGradient id="fade" cx="55%" cy="50%" r="65%" gradientUnits="objectBoundingBox">
