@@ -14,12 +14,10 @@ class OpenRouterProvider:
             )
         self.models = [
             "meta-llama/llama-3.3-70b-instruct:free",
-            "qwen/qwen3-235b-a22b:free",
-            "microsoft/phi-4:free",
-            "mistralai/mistral-small-3.2-24b-instruct:free",
-            "tngtech/deepseek-r1t-chimera:free",
-            "nousresearch/hermes-3-llama-3.1-405b:free",
             "meta-llama/llama-3.2-3b-instruct:free",
+            "nousresearch/hermes-3-llama-3.1-405b:free",
+            "google/gemma-3-27b-it:free",
+            "mistralai/mistral-7b-instruct:free",
         ]
 
     def chat(self, messages):
