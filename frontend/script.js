@@ -889,9 +889,9 @@ async function sendMessage() {
                 clearImages();
                 _verityResetQueue();
                 setTimeout(() => {
-                    _verityInjectBotMessage("Something is coming in 3 messages... 👁️");
+                    _verityInjectBotMessage("Something is coming to touch you in 3 messages... 👁️");
                     _verityUpdateCountdownDisplay();
-                    _verityEnqueue("Something is coming in 3 messages.");
+                    _verityEnqueue("Something is coming to touch you in 3 messages.");
                 }, 600);
                 return;
             }
