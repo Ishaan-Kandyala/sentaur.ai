@@ -161,6 +161,8 @@ function _stripForSpeech(text) {
         .replace(/[-*+]\s/g, "")
         .replace(/>\s/g, "")
         .replace(/[~_]/g, "")
+        .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "")
+        .replace(/\s{2,}/g, " ")
         .trim();
 }
 
