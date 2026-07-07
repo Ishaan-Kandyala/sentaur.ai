@@ -167,12 +167,12 @@
                     fill="#252530" stroke="#0d0d10" stroke-width="0.7"/>
             </pattern>
 
-            <!-- Global dark-left → light-right sweep across the full 1920-wide canvas -->
-            <linearGradient id="dark-sweep" x1="0" y1="0" x2="1920" y2="0" gradientUnits="userSpaceOnUse">
-                <stop offset="0%"   stop-color="#000" stop-opacity="0.95"/>
-                <stop offset="12%"  stop-color="#000" stop-opacity="0.85"/>
-                <stop offset="38%"  stop-color="#000" stop-opacity="0.45"/>
-                <stop offset="68%"  stop-color="#000" stop-opacity="0"/>
+            <!-- Global dark top-left → transparent bottom-right sweep -->
+            <linearGradient id="dark-sweep" x1="0" y1="0" x2="1920" y2="1080" gradientUnits="userSpaceOnUse">
+                <stop offset="0%"   stop-color="#000" stop-opacity="0.97"/>
+                <stop offset="20%"  stop-color="#000" stop-opacity="0.80"/>
+                <stop offset="48%"  stop-color="#000" stop-opacity="0.35"/>
+                <stop offset="72%"  stop-color="#000" stop-opacity="0"/>
             </linearGradient>
 
             <radialGradient id="fade" cx="960" cy="540" r="900" gradientUnits="userSpaceOnUse">
