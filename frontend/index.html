@@ -68,8 +68,9 @@
         }
 
         .brand-logo {
-            height: 64px;
             width: auto;
+            height: auto;
+            max-width: min(600px, 90vw);
         }
 
         .divider {
@@ -132,7 +133,7 @@
         @media (max-width: 520px) {
             .access-form { flex-direction: column; width: calc(100vw - 48px); }
             .access-form input[type="email"] { width: 100%; }
-            .brand-logo { height: 48px; }
+            .brand-logo { max-width: 85vw; }
         }
     </style>
 </head>
