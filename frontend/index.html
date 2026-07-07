@@ -67,17 +67,9 @@
             gap: 18px;
         }
 
-        .brand-icon {
-            width: 58px;
-            height: 58px;
-            flex-shrink: 0;
-        }
-
-        .brand-name {
-            font-size: 44px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            line-height: 1;
+        .brand-logo {
+            height: 64px;
+            width: auto;
         }
 
         .divider {
@@ -140,8 +132,7 @@
         @media (max-width: 520px) {
             .access-form { flex-direction: column; width: calc(100vw - 48px); }
             .access-form input[type="email"] { width: 100%; }
-            .brand-name { font-size: 32px; }
-            .brand-icon { width: 44px; height: 44px; }
+            .brand-logo { height: 48px; }
         }
     </style>
 </head>
@@ -204,26 +195,7 @@
 
 <main class="hero">
     <div class="brand">
-        <!-- Orange hexagonal logo -->
-        <svg class="brand-icon" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <polygon points="30,3 55,17 55,43 30,57 5,43 5,17"
-                fill="#f14621" fill-opacity=".12" stroke="#f14621" stroke-width="1.2"/>
-            <polygon points="30,11 47,21 47,41 30,51 13,41 13,21"
-                fill="#f14621" fill-opacity=".08" stroke="#f14621" stroke-opacity=".5" stroke-width="0.8"/>
-            <!-- internal circuit lines -->
-            <line x1="30" y1="3"  x2="30" y2="20" stroke="#f14621" stroke-width="1.2" stroke-opacity=".7"/>
-            <line x1="55" y1="17" x2="40" y2="26" stroke="#f14621" stroke-width="1.2" stroke-opacity=".7"/>
-            <line x1="55" y1="43" x2="40" y2="34" stroke="#f14621" stroke-width="1.2" stroke-opacity=".7"/>
-            <line x1="30" y1="57" x2="30" y2="40" stroke="#f14621" stroke-width="1.2" stroke-opacity=".7"/>
-            <line x1="5"  y1="43" x2="20" y2="34" stroke="#f14621" stroke-width="1.2" stroke-opacity=".7"/>
-            <line x1="5"  y1="17" x2="20" y2="26" stroke="#f14621" stroke-width="1.2" stroke-opacity=".7"/>
-            <!-- inner hexagon filled -->
-            <polygon points="30,20 40,26 40,38 30,44 20,38 20,26" fill="#f14621" fill-opacity=".25"/>
-            <!-- center dot -->
-            <circle cx="30" cy="30" r="5" fill="#f14621" fill-opacity=".9"/>
-            <circle cx="30" cy="30" r="2.5" fill="#fff" fill-opacity=".85"/>
-        </svg>
-        <span class="brand-name">Sentrinox AI</span>
+        <img src="/DarkLogoSentrinox.svg" alt="Sentrinox AI" class="brand-logo">
     </div>
 
     <div class="divider"></div>
